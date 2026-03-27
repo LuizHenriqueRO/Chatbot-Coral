@@ -27,9 +27,12 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   preload(): void {
+    // Load desk sprites
     for (const [key, path] of Object.entries(DESK_PATHS)) {
       this.load.image(key, path);
     }
+
+    // Load avatar sprites
     for (const name of CHARACTER_NAMES) {
       const keys = avatarKeys(name);
       this.load.image(keys.blink, avatarPath(name, 'blink'));
@@ -37,16 +40,25 @@ export class OfficeScene extends Phaser.Scene {
       this.load.image(keys.wave1, avatarPath(name, 'wave1'));
       this.load.image(keys.wave2, avatarPath(name, 'wave2'));
     }
+
+    // Load furniture sprites
     for (const [key, path] of Object.entries(FURNITURE_PATHS)) {
       this.load.image(key, path);
     }
+
+    this.load.on('loaderror', (file: Phaser.Loader.File) => {
+      console.error('Failed to load asset:', file.key, file.url);
+    });
   }
 
   create(): void {
+
     this.roomBuilder = new RoomBuilder(this);
+
     this.events.on('stateUpdate', (state: SquadState | null) => {
       this.onStateUpdate(state);
     });
+
     this.renderScene(DEMO_AGENTS);
   }
 
@@ -64,6 +76,8 @@ export class OfficeScene extends Phaser.Scene {
     const roomW = maxCol * CELL_W + MARGIN * 2;
     const roomH = maxRow * CELL_H + MARGIN * 2 + WALL_H;
 
+
+
     this.clearScene();
     this.roomBuilder.build(roomW, roomH);
 
@@ -77,7 +91,15 @@ export class OfficeScene extends Phaser.Scene {
       this.agentSprites.set(agent.id, agentSprite);
     }
 
-    this.scale.setGameSize(roomW, roomH);
+    // Fit room in viewport
+    const cam = this.cameras.main;
+    const scaleX = cam.width / roomW;
+    const scaleY = cam.height / roomH;
+    const zoom = Math.min(scaleX, scaleY, 2);
+    cam.setZoom(zoom);
+    cam.centerOn(roomW / 2, roomH / 2);
+
+
   }
 
   private clearScene(): void {

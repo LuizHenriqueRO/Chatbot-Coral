@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { OfficeScene } from './OfficeScene';
 import { useSquadStore } from '@/store/useSquadStore';
-import { COLORS } from './palette';
 
 export function PhaserGame() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -12,22 +11,38 @@ export function PhaserGame() {
   useEffect(() => {
     if (!containerRef.current || gameRef.current) return;
 
+    const container = containerRef.current;
+    const w = container.clientWidth || 800;
+    const h = container.clientHeight || 600;
+
     const game = new Phaser.Game({
       type: Phaser.AUTO,
-      parent: containerRef.current,
+      parent: container,
+      width: w,
+      height: h,
       pixelArt: true,
-      zoom: 2,
-      backgroundColor: COLORS.background,
+      backgroundColor: '#1a1420',
       scene: [OfficeScene],
       scale: {
-        mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
+        mode: Phaser.Scale.NONE,
       },
     });
 
     gameRef.current = game;
 
+    // Resize canvas when container resizes
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          game.scale.resize(width, height);
+        }
+      }
+    });
+    ro.observe(container);
+
     return () => {
+      ro.disconnect();
       game.destroy(true);
       gameRef.current = null;
     };
