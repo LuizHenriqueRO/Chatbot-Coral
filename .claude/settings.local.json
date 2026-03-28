@@ -3,7 +3,8 @@
     "allow": [
       "Read(//c/Users/renat/.claude/plugins//**)",
       "Read(//c/Users/renat/.claude/plugins/**)",
-      "Read(//c/Users/renat/.claude/**)"
+      "Read(//c/Users/renat/.claude/**)",
+      "Edit(/.claude/skills/opensquad-dev/**)"
     ]
   },
   "outputStyle": "default"

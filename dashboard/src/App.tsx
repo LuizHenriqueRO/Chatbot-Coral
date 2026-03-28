@@ -1,6 +1,6 @@
 import { useSquadSocket } from "@/hooks/useSquadSocket";
 import { SquadSelector } from "@/components/SquadSelector";
-import { OfficeScene } from "@/office/OfficeScene";
+import { PhaserGame } from "@/office/PhaserGame";
 import { StatusBar } from "@/components/StatusBar";
 
 export function App() {
@@ -36,7 +36,7 @@ export function App() {
       {/* Main content */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <SquadSelector />
-        <OfficeScene />
+        <PhaserGame />
       </div>
 
       {/* Footer */}

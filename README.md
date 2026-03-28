@@ -10,7 +10,7 @@ opensquad é um framework de orquestração multi-agente. Descreva o que você p
 
 ## O que é um Squad?
 
-Um squad é uma equipe de agentes de IA que colaboram em uma tarefa. Cada agente tem um papel específico. Eles executam em pipeline — você só intervém nos checkpoints de decisão.
+Um squad é uma equipe de agentes de IA que colaboram em uma tarefa. Cada agente tem um papel específico. Eles executam em pipeline com checkpoints onde o agente pausa e pede sua aprovação antes de continuar. Os checkpoints são instruções no pipeline do agente — o enforcement real de permissões depende da IDE host (ex: Claude Code, Cursor).
 
 Exemplo:
 
@@ -38,12 +38,12 @@ npx opensquad update
 
 | IDE | Status |
 |-----|--------|
-| Antigravity | Disponível |
 | Claude Code | Disponível |
-| Codex (OpenAI) | Disponível |
-| Open Code | Disponível |
 | Cursor | Disponível |
 | VS Code + Copilot | Disponível |
+| Codex (OpenAI) | Disponível |
+| Open Code | Disponível |
+| Antigravity | Disponível |
 
 ## Escritório Virtual
 
@@ -83,7 +83,7 @@ Você pode executar o squad novamente com /opensquad, ou pedindo diretamente:
 /opensquad rode o squad <nome-do-squad>
 ```
 
-O squad executa automaticamente, pausando apenas nos checkpoints onde sua decisão é necessária.
+O squad executa automaticamente, pausando nos checkpoints onde o agente pede sua aprovação.
 
 ## Exemplos
 
@@ -111,6 +111,35 @@ O squad executa automaticamente, pausando apenas nos checkpoints onde sua decis�
 | `/opensquad install <nome>` | Instala uma skill do catálogo |
 | `/opensquad uninstall <nome>` | Remove uma skill instalada |
 
+## Custo de Tokens
+
+O opensquad é open source e gratuito como software. É possível usá-lo de forma 100% gratuita com stacks como Google Antigravity (free tier com Gemini) ou OpenCode com LLMs locais (Ollama, LM Studio, etc.).
+
+Porém, stacks como Claude Code (Claude Pro/Max) e API da OpenAI consomem tokens pagos:
+
+- Cada execução de squad consome tokens — a quantidade depende do número de agentes, da complexidade do pipeline e do modelo escolhido.
+- Investigações com Sherlock (navegação de perfis) e geração de imagens são operações especialmente intensivas.
+- O framework carrega prompts de sistema, best practices e instruções de agentes no contexto — o que contribui para o consumo base de cada execução.
+
+Se estiver usando uma stack paga, recomendamos monitorar seu consumo de tokens na sua IDE ou no dashboard do provedor de IA.
+
+## Sessões de Navegador e Privacidade
+
+Quando você fornece URLs de referência durante a criação de um squad (ex: "siga o estilo do @fulano"), o opensquad usa um navegador headless (Playwright) para visitar essas páginas e extrair padrões de conteúdo.
+
+- **Login manual:** na primeira vez que uma plataforma exige login, o opensquad pede para você entrar manualmente e **pergunta se deseja salvar a sessão** para investigações futuras.
+- **Cookies persistentes:** se você autorizar, os cookies ficam salvos localmente em `_opensquad/_browser_profile/`. Esse diretório nunca é commitado no git (`.gitignore`).
+- **Escopo de acesso:** o navegador tem acesso a qualquer URL — não apenas às referências fornecidas. As ações do navegador (navegação, cliques, execução de JavaScript) são controladas pelo agente investigador.
+- **Revogar sessões:** delete a pasta `_opensquad/_browser_profile/` para remover todos os cookies e dados de sessão salvos. Na próxima investigação, um novo login manual será necessário.
+
+## Sobre
+
+O opensquad é um projeto open source criado e mantido por [Renato Asse](https://github.com/renatoasse), fundador da [Comunidade Sem Codar](https://semcodar.com.br), uma Escola de IA com mais de 25 mil alunos focada em ensinar pessoas não-técnicas a usar inteligência artificial no trabalho.
+
+O projeto nasceu da necessidade real de automatizar processos de conteúdo e marketing usando agentes de IA — e é disponibilizado gratuitamente para que qualquer pessoa possa usar, estudar e contribuir.
+
+Contribuições da comunidade são bem-vindas. Veja o [CONTRIBUTING.md](CONTRIBUTING.md) para saber como participar.
+
 ## Licença
 
 MIT — use como quiser.
@@ -129,7 +158,7 @@ opensquad is a multi-agent orchestration framework. Describe what you need in pl
 
 ## What is a Squad?
 
-A squad is a team of AI agents that collaborate on a task. Each agent has a specific role. They run in a pipeline — you only step in at decision checkpoints.
+A squad is a team of AI agents that collaborate on a task. Each agent has a specific role. They run in a pipeline with checkpoints where the agent pauses and asks for your approval before continuing. Checkpoints are instructions in the agent pipeline — actual permission enforcement depends on the host IDE (e.g., Claude Code, Cursor).
 
 Example:
 
@@ -156,12 +185,12 @@ npx opensquad update
 
 | IDE | Status |
 |-----|--------|
-| Antigravity | Available |
 | Claude Code | Available |
-| Codex (OpenAI) | Available |
-| Open Code | Available |
 | Cursor | Available |
 | VS Code + Copilot | Available |
+| Codex (OpenAI) | Available |
+| Open Code | Available |
+| Antigravity | Available |
 
 ## Virtual Office
 
@@ -197,7 +226,7 @@ The **Architect** asks a few questions, designs the squad, and sets everything u
 /opensquad run <squad-name>
 ```
 
-The squad runs automatically, pausing only at checkpoints where your decision is needed.
+The squad runs automatically, pausing at checkpoints where the agent asks for your approval.
 
 ## Examples
 
@@ -221,6 +250,35 @@ The squad runs automatically, pausing only at checkpoints where your decision is
 | `/opensquad skills` | Browse installed skills |
 | `/opensquad install <name>` | Install a skill from catalog |
 | `/opensquad uninstall <name>` | Remove an installed skill |
+
+## Token Cost
+
+opensquad is open source and free as software. You can use it completely free with stacks like Google Antigravity (free tier with Gemini) or OpenCode with local LLMs (Ollama, LM Studio, etc.).
+
+However, stacks like Claude Code (Claude Pro/Max) and OpenAI API consume paid tokens:
+
+- Every squad run consumes tokens — the amount depends on the number of agents, pipeline complexity, and the model chosen.
+- Sherlock investigations (profile browsing) and image generation are especially token-intensive operations.
+- The framework loads system prompts, best practices, and agent instructions into context — contributing to the base token consumption of every run.
+
+If using a paid stack, we recommend monitoring your token usage in your IDE or your AI provider's dashboard.
+
+## Browser Sessions & Privacy
+
+When you provide reference URLs during squad creation (e.g., "follow the style of @someone"), opensquad uses a headless browser (Playwright) to visit those pages and extract content patterns.
+
+- **Manual login:** the first time a platform requires login, opensquad asks you to log in manually and **asks whether you want to save the session** for future investigations.
+- **Persistent cookies:** if you agree, cookies are saved locally in `_opensquad/_browser_profile/`. This directory is never committed to git (`.gitignore`).
+- **Access scope:** the browser can access any URL — not just the references you provided. Browser actions (navigation, clicks, JavaScript execution) are controlled by the investigator agent.
+- **Revoking sessions:** delete the `_opensquad/_browser_profile/` folder to remove all saved cookies and session data. The next investigation will require a fresh manual login.
+
+## About
+
+opensquad is an open source project created and maintained by [Renato Asse](https://github.com/renatoasse), founder of [Comunidade Sem Codar](https://semcodar.com.br) (No-Code Community), an AI School with over 25,000 students focused on teaching non-technical people how to use artificial intelligence at work.
+
+The project was born from the real need to automate content and marketing workflows using AI agents — and is made freely available so anyone can use, study, and contribute.
+
+Community contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) to learn how to participate.
 
 ## License
 

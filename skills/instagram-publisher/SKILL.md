@@ -2,17 +2,17 @@
 name: instagram-publisher
 description: >
   Publishes Instagram carousel posts from local images.
-  Uploads images to catbox.moe for temporary public hosting, creates Instagram
+  Uploads images to imgBB (requires API key) for public hosting, creates Instagram
   media containers via the Graph API, and publishes the carousel.
   Supports 2-10 images per post and retrieves the real post permalink.
 description_pt-BR: >
   Publica carrosséis do Instagram a partir de imagens locais.
-  Faz upload das imagens para o catbox.moe como hospedagem pública temporária,
+  Faz upload das imagens para o imgBB (requer chave de API) como hospedagem pública,
   cria containers de mídia via Graph API e publica o carrossel.
   Suporta de 2 a 10 imagens por post e obtém o permalink real.
 description_es: >
   Publica carruseles de Instagram a partir de imágenes locales.
-  Sube las imágenes a catbox.moe como hosting público temporal, crea
+  Sube las imágenes a imgBB (requiere clave de API) como hosting público, crea
   contenedores de medios vía Graph API y publica el carrusel.
   Soporta de 2 a 10 imágenes por post y obtiene el permalink real.
 type: script
@@ -24,6 +24,7 @@ script:
 env:
   - INSTAGRAM_ACCESS_TOKEN
   - INSTAGRAM_USER_ID
+  - IMGBB_API_KEY
 categories: [social-media, publishing, instagram]
 ---
 
@@ -31,7 +32,7 @@ categories: [social-media, publishing, instagram]
 
 ## When to use
 
-Use the Instagram Publisher when you need to publish carousel posts directly to an Instagram Business account. This skill handles the full workflow: uploading images to a temporary public host (catbox.moe), creating Instagram media containers via the Graph API, and publishing the carousel. It supports 2-10 JPEG images per post.
+Use the Instagram Publisher when you need to publish carousel posts directly to an Instagram Business account. This skill handles the full workflow: uploading images to imgBB (requires your own API key from https://api.imgbb.com/), creating Instagram media containers via the Graph API, and publishing the carousel. It supports 2-10 JPEG images per post.
 
 
 ## Instructions
@@ -114,5 +115,5 @@ Pré-requisito: conta Instagram Business conectada a uma Página do Facebook, e 
 
 - **Publish Carousel** -- Upload images and publish a carousel post to Instagram
 - **Dry Run** -- Test the full publishing flow without actually posting (use `--dry-run` flag)
-- **Image Upload** -- Upload local JPEG images to catbox.moe for temporary public hosting
+- **Image Upload** -- Upload local JPEG images to imgBB (requires API key)
 - **Status Check** -- Monitor media container processing status before publishing

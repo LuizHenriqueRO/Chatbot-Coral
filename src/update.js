@@ -2,7 +2,7 @@ import { cp, mkdir, readFile, stat } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadLocale, t } from './i18n.js';
-import { getTemplateEntries, loadSavedLocale } from './init.js';
+import { getTemplateEntries, loadSavedLocale, copyCanonicalSources } from './init.js';
 import { listAvailable as listAvailableSkills, listInstalled as listInstalledSkills, installSkill, getSkillMeta } from './skills.js';
 import { logEvent } from './logger.js';
 
@@ -25,7 +25,6 @@ const TEMPLATES_DIR = join(__dirname, '..', 'templates');
 
 const PROTECTED_PATHS = [
   '_opensquad/_memory',
-  '_opensquad/_investigations',
   'agents',
   'squads',
 ];
@@ -35,6 +34,17 @@ function isProtected(relativePath) {
   return PROTECTED_PATHS.some(
     (p) => normalized === p || normalized.startsWith(p + '/')
   );
+}
+
+async function backupIfExists(destPath) {
+  try {
+    await stat(destPath);
+    const backupPath = destPath + '.bak';
+    await cp(destPath, backupPath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function update(targetDir) {
@@ -87,8 +97,14 @@ export async function update(targetDir) {
 
     const destPath = join(targetDir, relativePath);
     await mkdir(dirname(destPath), { recursive: true });
+    const backed = await backupIfExists(destPath);
     await cp(entry, destPath);
-    console.log(`  ${t('updatedFile', { path: relativePath.replaceAll('\\', '/') })}`);
+    const displayPath = relativePath.replaceAll('\\', '/');
+    if (backed) {
+      console.log(`  ${t('updatedFile', { path: displayPath })} (backup: ${displayPath}.bak)`);
+    } else {
+      console.log(`  ${t('updatedFile', { path: displayPath })}`);
+    }
     count++;
   }
 
@@ -108,11 +124,24 @@ export async function update(targetDir) {
 
       const destPath = join(targetDir, relPath);
       await mkdir(dirname(destPath), { recursive: true });
+      const backed = await backupIfExists(destPath);
       await cp(entry, destPath);
-      console.log(`  ${t('updatedFile', { path: relPath.replaceAll('\\', '/') })}`);
+      const displayPath = relPath.replaceAll('\\', '/');
+      if (backed) {
+        console.log(`  ${t('updatedFile', { path: displayPath })} (backup: ${displayPath}.bak)`);
+      } else {
+        console.log(`  ${t('updatedFile', { path: displayPath })}`);
+      }
       count++;
     }
   }
+
+  // 6a. Copy canonical sources (core, config, dashboard)
+  count += await copyCanonicalSources(targetDir, {
+    overwrite: true,
+    backupFn: backupIfExists,
+    protectedFn: isProtected,
+  });
 
   // 6b. Install new non-MCP, non-hybrid bundled skills not already present
   const availableSkills = await listAvailableSkills();

@@ -10,6 +10,16 @@ import { logEvent } from './logger.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '..', 'templates');
 
+const PACKAGE_ROOT = join(__dirname, '..');
+
+const CANONICAL_SOURCES = [
+  { src: join(PACKAGE_ROOT, '_opensquad', 'core'), dest: join('_opensquad', 'core') },
+  { src: join(PACKAGE_ROOT, '_opensquad', 'config'), dest: join('_opensquad', 'config') },
+  { src: join(PACKAGE_ROOT, 'dashboard'), dest: 'dashboard' },
+];
+
+const DASHBOARD_EXCLUDES = ['node_modules', 'tsconfig.tsbuildinfo', 'squads'];
+
 const LANGUAGES = [
   { label: 'Português (Brasil)', value: 'Português (Brasil)' },
   { label: 'English', value: 'English' },
@@ -68,6 +78,7 @@ export async function init(targetDir, options = {}) {
 
   // Copy template files
   await copyCommonTemplates(targetDir);
+  await copyCanonicalSources(targetDir);
   await copyIdeTemplates(ides, targetDir);
   await installAllSkills(targetDir);
   if (!options._skipPrompts) {
@@ -90,6 +101,7 @@ export async function init(targetDir, options = {}) {
   await logEvent('init', { language, ides: ides.join(',') }, targetDir);
 
   console.log(`\n  ${t('success')}\n`);
+  console.log(`  ⚠️  ${t('tokenCostWarning')}\n`);
   console.log(`  ${t('nextSteps')}`);
   for (const ide of ides) {
     if (ide === 'claude-code') {
@@ -145,9 +157,17 @@ async function installDependencies(targetDir) {
 }
 
 async function writeProjectReadme(targetDir) {
+  const destPath = join(targetDir, 'README.md');
+  try {
+    await stat(destPath);
+    // README already exists — skip to avoid overwriting user content
+    return;
+  } catch {
+    // does not exist — write it
+  }
   const readmePath = join(__dirname, 'readme', 'README.md');
   const content = await readFile(readmePath, 'utf-8');
-  await writeFile(join(targetDir, 'README.md'), content, 'utf-8');
+  await writeFile(destPath, content, 'utf-8');
 }
 
 async function copyCommonTemplates(targetDir) {
@@ -195,6 +215,12 @@ async function copyIdeTemplates(ides, targetDir) {
       const destPath = join(targetDir, relativePath);
       const destDir = dirname(destPath);
       await mkdir(destDir, { recursive: true });
+      try {
+        await stat(destPath);
+        continue; // file already exists — skip
+      } catch {
+        // does not exist — copy it
+      }
       await cp(entry, destPath);
       console.log(`  ${t('createdFile', { path: relativePath })}`);
     }
@@ -255,4 +281,61 @@ export async function getTemplateEntries(dir) {
   }
 
   return results;
+}
+
+export async function copyCanonicalSources(targetDir, { overwrite = false, backupFn = null, protectedFn = null } = {}) {
+  let count = 0;
+
+  for (const { src, dest } of CANONICAL_SOURCES) {
+    const isDashboard = dest === 'dashboard';
+    let entries;
+    try {
+      entries = await getTemplateEntries(src);
+    } catch {
+      continue; // source dir doesn't exist (e.g., running from a partial install)
+    }
+
+    for (const entry of entries) {
+      const relativeToSrc = entry.slice(src.length + 1);
+      const normalizedRel = relativeToSrc.replace(/\\/g, '/');
+
+      // Skip dashboard-local artifacts
+      if (isDashboard && DASHBOARD_EXCLUDES.some(ex => normalizedRel === ex || normalizedRel.startsWith(ex + '/'))) {
+        continue;
+      }
+
+      const relativePath = join(dest, relativeToSrc);
+      const normalizedPath = relativePath.replace(/\\/g, '/');
+
+      // Skip protected paths (update mode)
+      if (protectedFn && protectedFn(normalizedPath)) continue;
+
+      const destPath = join(targetDir, relativePath);
+      await mkdir(dirname(destPath), { recursive: true });
+
+      if (!overwrite) {
+        // Init mode: skip existing files
+        try {
+          await stat(destPath);
+          continue;
+        } catch {
+          // does not exist — copy it
+        }
+        await cp(entry, destPath);
+        console.log(`  ${t('createdFile', { path: normalizedPath })}`);
+      } else {
+        // Update mode: backup then overwrite
+        const backed = backupFn ? await backupFn(destPath) : false;
+        await cp(entry, destPath);
+        if (backed) {
+          console.log(`  ${t('updatedFile', { path: normalizedPath })} (backup: ${normalizedPath}.bak)`);
+        } else {
+          console.log(`  ${t('updatedFile', { path: normalizedPath })}`);
+        }
+      }
+      count++;
+    }
+  }
+
+  return count;
 }

@@ -42,7 +42,7 @@ Every platform has specific constraints that must be validated before making any
 - **Image count**: 2-10 images for carousel
 - **Caption length**: Max 2,200 characters
 - **Rate limit**: 25 posts per 24 hours
-- **Image hosting**: Use catbox.moe for temporary public URLs (no API key needed)
+- **Image hosting**: Use imgBB for public URLs (requires `IMGBB_API_KEY` in `.env`). Get a free key at https://api.imgbb.com/
 
 ### LinkedIn
 - **Image format**: JPG/PNG
@@ -167,7 +167,7 @@ Status: All validations passed. Ready for dry-run.
 DRY-RUN RESULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Credentials: Valid (token expires 2026-04-15)
-  Image upload: 7/7 images uploaded to catbox.moe
+  Image upload: 7/7 images uploaded to imgBB
   Media containers: 7/7 containers created
   Carousel container: Created successfully
   Publish: Skipped (dry-run mode)

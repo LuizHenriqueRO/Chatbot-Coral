@@ -16,7 +16,7 @@ export interface Agent {
   name: string;
   icon: string;
   status: AgentStatus;
-  deliverTo: string | null;
+  gender?: "male" | "female";
   desk: AgentDesk;
 }
 

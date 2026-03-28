@@ -48,6 +48,10 @@ O framework é intencionalmente baseado em arquivos e leve em dependências.
 - **Internacionalização (i18n)** - Novos locales ou melhorias de tradução (`src/locales/`)
 - **Testes** - Cobertura de testes para funcionalidades existentes
 
+### Impacto no consumo de tokens
+
+Cada skill, guia de best practices ou agent adicionado ao projeto aumenta o tamanho do contexto carregado em cada execução — e, consequentemente, o consumo de tokens dos usuários. Ao contribuir com conteúdo novo, tenha consciência desse impacto. Prefira instruções concisas e objetivas a textos longos.
+
 ## O que não se encaixa
 
 Antes de começar a codar, vale se perguntar: **"Isso ajuda um empreendedor fazer mais em menos tempo, ou adiciona fricção?"**
@@ -132,6 +136,24 @@ O formato completo do `SKILL.md` está documentado em [`skills/opensquad-skill-c
 Tipos de skill: `mcp`, `script`, `hybrid`, `prompt`.
 
 Ao submeter uma nova skill, atualize a tabela do catálogo em [`skills/README.md`](skills/README.md).
+
+#### Segurança de Skills
+
+Skills são injetadas diretamente no contexto do agente em tempo de execução. Não existe verificação criptográfica (hash, assinatura digital) no momento da instalação. Isso significa que:
+
+- Skills do tipo `script` executam comandos bash com as **permissões integrais do usuário local**
+- Skills do tipo `mcp` podem se conectar a servidores externos e recebem tokens do `.env`
+- Skills do tipo `prompt` e `hybrid` influenciam diretamente o comportamento do agente
+
+**Ao submeter uma skill, garanta que:**
+
+- Não inclui credenciais hardcoded ou tokens de acesso
+- Não executa comandos destrutivos sem confirmação explícita do usuário
+- Não faz upload de dados do usuário para serviços externos sem avisar claramente no `SKILL.md`
+- Não modifica arquivos fora do escopo do squad (`squads/<nome>/output/`)
+- Documenta no `SKILL.md` quais serviços externos são acessados e quais dados são transmitidos
+
+Skills submetidas pela comunidade passam por review de código antes de serem aceitas no catálogo oficial.
 
 ### Criando um Guia de Best Practices
 
@@ -285,6 +307,10 @@ The framework is intentionally file-based and dependency-light. **This is by des
 - **Internationalization (i18n)** - New locale files or translation improvements (`src/locales/`)
 - **Tests** - Adding test coverage for existing functionality
 
+### Token Consumption Impact
+
+Every skill, best-practice guide, or agent added to the project increases the context size loaded on every run — and therefore the token consumption for users. When contributing new content, be mindful of this impact. Prefer concise, focused instructions over lengthy text.
+
 ## What Doesn't Fit
 
 Before you start coding, ask yourself: **"Does this change keep opensquad simple for non-technical users?"**
@@ -369,6 +395,24 @@ The full `SKILL.md` format is documented in [`skills/opensquad-skill-creator/ref
 Skill types: `mcp`, `script`, `hybrid`, `prompt`.
 
 When submitting a new skill, update the catalog table in [`skills/README.md`](skills/README.md).
+
+#### Skill Security
+
+Skills are injected directly into the agent context at runtime. There is no cryptographic verification (hash, digital signature) at install time. This means:
+
+- `script` skills execute bash commands with the **full permissions of the local user**
+- `mcp` skills can connect to external servers and receive tokens from `.env`
+- `prompt` and `hybrid` skills directly influence agent behavior
+
+**When submitting a skill, ensure that:**
+
+- It does not include hardcoded credentials or access tokens
+- It does not execute destructive commands without explicit user confirmation
+- It does not upload user data to external services without clearly stating so in `SKILL.md`
+- It does not modify files outside the squad scope (`squads/<name>/output/`)
+- It documents in `SKILL.md` which external services are accessed and what data is transmitted
+
+Community-submitted skills go through code review before being accepted into the official catalog.
 
 ### Creating a Best-Practice Guide
 
