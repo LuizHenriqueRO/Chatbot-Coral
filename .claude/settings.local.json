@@ -4,7 +4,15 @@
       "Read(//c/Users/renat/.claude/plugins//**)",
       "Read(//c/Users/renat/.claude/plugins/**)",
       "Read(//c/Users/renat/.claude/**)",
-      "Edit(/.claude/skills/opensquad-dev/**)"
+      "Edit(/.claude/skills/opensquad-dev/**)",
+      "Bash(npm install:*)",
+      "Bash(node bin/opensquad.js --help)",
+      "Bash(node bin/opensquad.js init)",
+      "Bash(node -e ':*)",
+      "WebFetch(domain:adventistasasanorte.org)",
+      "WebFetch(domain:www.instagram.com)",
+      "WebFetch(domain:www.facebook.com)",
+      "WebSearch"
     ]
   },
   "outputStyle": "default"
