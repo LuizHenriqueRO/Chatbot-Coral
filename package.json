@@ -11,7 +11,7 @@
     "lint": "eslint src/ bin/ tests/",
     "version": "node -e \"require('fs').writeFileSync('templates/_opensquad/.opensquad-version', require('./package.json').version + '\\n')\" && git add templates/_opensquad/.opensquad-version",
     "start": "node src/server.js"
-  },,
+  },
   "keywords": [
     "claude-code",
     "ai-agents",
