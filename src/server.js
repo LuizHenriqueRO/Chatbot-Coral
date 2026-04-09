@@ -6,7 +6,7 @@ import { searchDrive } from './googleDriveService.js';
 import { buildResponse } from './responseBuilder.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'MEU_TOKEN_DE_VERIFICACAO';
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -91,6 +91,6 @@ async function sendWhatsAppMessage(payload) {
   }
 }
 
-app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor rodando na porta ${PORT} e ouvindo requisições externas`);
 });
