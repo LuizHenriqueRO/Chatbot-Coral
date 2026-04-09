@@ -47,7 +47,8 @@
     "@inquirer/select": "^5.1.0",
     "express": "^4.19.2",
     "fuse.js": "^7.0.0",
-    "googleapis": "^134.0.0"
+    "googleapis": "^134.0.0",
+    "openai": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
