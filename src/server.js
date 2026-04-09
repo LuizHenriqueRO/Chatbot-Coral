@@ -39,36 +39,21 @@ app.post('/webhook', async (req, res) => {
       for (const change of entry.changes) {
         if (change.field === 'messages') {
           const message = change.value.messages[0];
-          const sender_phone = change.value.contacts[0].wa_id;
+            const sender_phone = change.value.contacts[0].wa_id; // CORRIGIDO para wa_id
 
-          if (message && message.type === 'text') {
-            const userMessage = message.text.body.toLowerCase();
+            if (message && message.type === 'text') {
+              // Processamento com IA para todas as mensagens
+              const intent = await parseIntent(message.text.body);
+              console.log('Intent parsed:', JSON.stringify(intent, null, 2));
 
-            // Lógica para mensagem de boas-vindas
-            if (userMessage.includes('oi') || userMessage.includes('olá') || userMessage === 'ola') {
-              const welcomeMessage = "Olá! Eu sou o chatbot do Coral Jovem da Asa Norte. Posso te ajudar a encontrar pistas, partituras e letras de músicas do nosso repertório. É só pedir! Por exemplo: 'Queria a pista contralto de Ainda Há Tempo'.";
-              await sendWhatsAppMessage({
-                messaging_product: 'whatsapp',
-                to: sender_phone,
-                type: 'text',
-                text: { body: welcomeMessage },
-              });
-              // res.status(200).send('EVENT_RECEIVED'); // Não enviar resposta aqui, o loop continua
-              return; // Termina o processamento para a mensagem de boas-vindas
+              const driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part);
+              console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
+
+              const response = buildResponse(intent, driveResult, sender_phone);
+              console.log('Response built:', JSON.stringify(response, null, 2));
+
+              await sendWhatsAppMessage(response.api_payload);
             }
-
-            // Processamento normal com IA para outras mensagens
-            const intent = await parseIntent(message.text.body); // parseIntent agora é assíncrono
-            console.log('Intent parsed:', JSON.stringify(intent, null, 2));
-
-            const driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part);
-            console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
-
-            const response = buildResponse(intent, driveResult, sender_phone);
-            console.log('Response built:', JSON.stringify(response, null, 2));
-
-            await sendWhatsAppMessage(response.api_payload);
-          }
         }
       }
     }
