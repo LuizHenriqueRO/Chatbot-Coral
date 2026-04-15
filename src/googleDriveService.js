@@ -67,7 +67,7 @@ export async function searchDrive(song_name, file_type, voice_part) {
     files = files.filter(file => {
       if (file_type === 'txt') return file.mimeType === 'text/plain' || file.name.endsWith('.txt');
       if (file_type === 'pdf') return file.mimeType === 'application/pdf' || file.name.endsWith('.pdf');
-      if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a)$/i);
+      if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|aac|flac|wma|opus)$/i);
       return false;
     });
 
