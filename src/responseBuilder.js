@@ -18,7 +18,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
         file_label = intent.voice_part ? `a pista de ${intent.voice_part}` : 'a pista';
         message_type = 'audio';
         api_payload.type = 'audio';
-        api_payload.audio = { link: driveResult.download_url, caption: `${driveResult.file_name} 🎶` };
+        api_payload.audio = { link: driveResult.download_url };
       } else if (intent.file_type === 'pdf') {
         file_label = 'a partitura';
         message_type = 'document';
@@ -55,7 +55,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
   if (message_text.length > 300) {
     message_text = message_text.substring(0, 297) + '...';
     if (api_payload.text) api_payload.text.body = message_text;
-    if (api_payload.audio) api_payload.audio.caption = message_text;
+
     if (api_payload.document) api_payload.document.caption = message_text;
   }
 
