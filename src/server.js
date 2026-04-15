@@ -47,8 +47,11 @@ app.post('/webhook', async (req, res) => {
                 const intent = await parseIntent(message.text.body);
                 console.log('Intent parsed:', JSON.stringify(intent, null, 2));
 
-                const driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part);
-                console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
+                let driveResult = null;
+                if (intent.action === 'search') {
+                  driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part);
+                  console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
+                }
 
                 const response = buildResponse(intent, driveResult, sender_phone);
                 console.log('Response built:', JSON.stringify(response, null, 2));
