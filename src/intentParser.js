@@ -24,7 +24,7 @@ Retorne o formato:
 }
 
 CENÁRIO 2: Busca de Material (action: "search")
-Se o usuário pedir um material específico de uma música.
+APENAS se o usuário especificar os detalhes suficientes da música que deseja buscar.
 Retorne o formato: 
 {
   "action": "search",
@@ -33,10 +33,10 @@ Retorne o formato:
   "voice_part": "[soprano | contralto | tenor | baixo | baritono | null]"
 }
 
-REGRAS DE EXTRAÇÃO (Apenas para "search"):
-- song_name: Tente inferir o nome completo da música. Se não houver nome claro, retorne null. Converta sempre para Title Case (primeira letra de cada palavra em maiúscula).
-- file_type: Determine o tipo. Priorize termos como "partitura" (pdf), "pista" ou "áudio" (audio), "letra" (txt). Se não houver, retorne null.
-- voice_part: Se for áudio, tente identificar a voz. Use o padrão: "soprano", "contralto", "tenor", "baixo", "baritono". Se não houver, retorne null.
+REGRAS CRÍTICAS PARA BUSCA:
+1. FALTA DE MÚSICA: Se o usuário pedir uma partitura, áudio ou letra mas NÃO Disser qual é a música (ex: "tem a partitura?", "quero a letra"), VOCÊ NÃO DEVE usar action: "search". Em vez disso, use action: "chat" e peça o nome da música, lembrando o usuário de mandar tudo na mesma mensagem (ex: "Para qual música você precisa da letra? Como eu ainda não tenho memória de conversas, por favor, me envie o pedido completo em uma única mensagem, tipo: 'Quero a letra de Digno é o Cordeiro'.").
+2. FALTA DE VOZ (ÁUDIOS): Se o usuário pedir um áudio ou kit de voz de uma música, mas NÃO especificar o naipe/voz (soprano, contralto, tenor, baixo), VOCÊ NÃO DEVE usar action: "search". Use action: "chat" e pergunte qual é a voz, lembrando o usuário do mesmo formato completo: (ex: "Qual é a sua voz? Eu ainda não tenho memória de conversas, então por favor mande tudo junto numa nova mensagem (ex: 'Quero o áudio de tenor de Digno é o Cordeiro')."
+3. EXTRAÇÃO: Converta o song_name para Title Case. Se a busca é por áudio, extraia a voice_part para o padrão (soprano, contralto, tenor, baixo, baritono). Se for partitura, file_type é 'pdf'. Se letra, 'txt'.
 
 Exemplos de interação:
 
@@ -53,7 +53,10 @@ Usuário: "Muito obrigado!!"
 Resposta: {"action": "chat", "chat_response": "Por nada! Fico feliz em ajudar. Bom ensaio e, se precisar de mais material, é só falar! 🎵"}
 
 Usuário: "Queria a letra daquela música nova"
-Resposta: {"action": "search", "song_name": null, "file_type": "txt", "voice_part": null}
+Resposta: {"action": "chat", "chat_response": "De qual música nova você quer a letra? Como eu ainda não guardo o histórico de nossas conversas, por favor, escreva o nome da música junto com o pedido na próxima mensagem (ex: 'Quero a letra de Nome da Música')."}
+
+Usuário: "Tem o áudio de Alfa e Ômega?"
+Resposta: {"action": "chat", "chat_response": "Tenho sim, mas qual é a sua voz (soprano, contralto, tenor ou baixo)? Lembre-se que ainda não tenho uma memória de conversa, então por favor envie uma mensagem completa de uma vez (ex: 'Quero o áudio de tenor de Alfa e Ômega')."}
 `;
 
 export async function parseIntent(message) {
