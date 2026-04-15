@@ -2,8 +2,9 @@
 import express from 'express';
 import { google } from 'googleapis';
 import { parseIntent } from './intentParser.js';
-import { searchDrive } from './googleDriveService.js';
+import { searchDrive, downloadFileBuffer } from './googleDriveService.js';
 import { buildResponse } from './responseBuilder.js';
+import { uploadMediaToWhatsApp } from './whatsappMediaService.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -51,6 +52,26 @@ app.post('/webhook', async (req, res) => {
                 if (intent.action === 'search') {
                   driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part);
                   console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
+
+                  if (driveResult.found) {
+                    try {
+                      console.log('Receiving file from Google Drive to local buffer...');
+                      const buffer = await downloadFileBuffer(driveResult.file_id);
+                      console.log('Pushing file stream to Meta Media API...');
+
+                      let safe_filename = driveResult.file_name;
+                      if (intent.file_type === 'pdf' && !safe_filename.toLowerCase().endsWith('.pdf')) safe_filename += '.pdf';
+                      if (intent.file_type === 'txt' && !safe_filename.toLowerCase().endsWith('.txt')) safe_filename += '.txt';
+
+                      const media_id = await uploadMediaToWhatsApp(buffer, driveResult.mime_type, safe_filename);
+                      console.log('Media mapped successfully via Meta API. media_id:', media_id);
+                      driveResult.media_id = media_id;
+                    } catch (uploadError) {
+                      console.error('Error migrating media to Meta Servers:', uploadError);
+                      driveResult.found = false;
+                      driveResult.error_message = 'Encontrei o arquivo, mas ocorreu um erro de conexão ao tentar prepará-lo para envio no WhatsApp.';
+                    }
+                  }
                 }
 
                 const response = buildResponse(intent, driveResult, sender_phone);

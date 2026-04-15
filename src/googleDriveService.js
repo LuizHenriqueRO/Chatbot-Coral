@@ -104,3 +104,21 @@ export async function searchDrive(song_name, file_type, voice_part) {
     return { found: false, error_message: 'Erro ao buscar no Google Drive.' };
   }
 }
+
+export async function downloadFileBuffer(fileId) {
+  if (!drive) {
+    initGoogleDrive();
+    if (!drive) {
+      throw new Error('Google Drive service not initialized.');
+    }
+  }
+
+  const response = await drive.files.get(
+    { fileId: fileId, alt: 'media' },
+    { responseType: 'arraybuffer' }
+  );
+
+  // Return the ArrayBuffer natively given by axios/googleapis
+  return response.data;
+}
+
