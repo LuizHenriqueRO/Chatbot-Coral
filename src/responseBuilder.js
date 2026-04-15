@@ -23,12 +23,14 @@ export function buildResponse(intent, driveResult, recipient_phone) {
         file_label = 'a partitura';
         message_type = 'document';
         api_payload.type = 'document';
-        api_payload.document = { link: driveResult.download_url, caption: `${driveResult.file_name} 🎶`, filename: driveResult.file_name };
+        let safe_pdf_name = driveResult.file_name.toLowerCase().endsWith('.pdf') ? driveResult.file_name : `${driveResult.file_name}.pdf`;
+        api_payload.document = { link: driveResult.download_url, caption: `${driveResult.file_name} 🎶`, filename: safe_pdf_name };
       } else if (intent.file_type === 'txt') {
         file_label = 'a letra';
         message_type = 'document'; // Meta API usa 'document' para txt e pdf
         api_payload.type = 'document';
-        api_payload.document = { link: driveResult.download_url, caption: `${driveResult.file_name} 🎵`, filename: driveResult.file_name };
+        let safe_txt_name = driveResult.file_name.toLowerCase().endsWith('.txt') ? driveResult.file_name : `${driveResult.file_name}.txt`;
+        api_payload.document = { link: driveResult.download_url, caption: `${driveResult.file_name} 🎵`, filename: safe_txt_name };
       }
 
       message_text = `Aqui está ${file_label} de *${intent.song_name}*! 🎶 Bons ensaios!`;
