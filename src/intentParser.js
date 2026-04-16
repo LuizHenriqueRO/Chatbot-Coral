@@ -36,9 +36,11 @@ Retorne o formato:
 
 REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO:
 1. CATEGORIA (category): Deduza inteligentemente o que o usuário quer. Se ele falar a palavra "hino" ou "hinário" (ex: "Quero o hino 564", "Hino Santo Santo Santo"), defina category: "hinario" e EXTRAIA file_type como "txt" SEMPRE. Se ele mencionar a palavra "livro", "Ellen White" ou títulos literários (ex: "Quero o livro A Ciência do Bom Viver"), defina category: "egw" e file_type como "pdf". Se ele pedir partituras em geral, letras comuns, áudios ou falar de naipes ("tenor", "baixo"), assuma category: "coral".
-2. FALTA DE MÚSICA (Coral): Se a category for "coral" e ele pedir material mas NÃO Disser o nome da música, NÃO DEVE usar action: "search". Use action: "chat" e peça a música.
-3. FALTA DE VOZ (ÁUDIOS do Coral): Se a category for "coral" e ele quiser áudio mas NÃO especificar a voz, recuse em action: "chat" e pergunte ("Qual a sua voz/naipe?").
-4. EXTRAÇÃO: song_name abriga títulos de livros, números de hinos, etc. Converta para Title Case.
+2. PEDIDO MÚLTIPLO: Se o usuário pedir DOIS OU MAIS materiais ao mesmo tempo na mesma frase (ex: "me manda o hino X e também a partitura Y", ou "o livro X e o livro Y"), VOCÊ DEVE RECUSAR. Use action: "chat" e responda que você só consegue buscar e enviar 1 (um) arquivo por vez, pedindo para o usuário solicitar apenas um por vez.
+3. FALTA DE MÚSICA (Coral): Se a category for "coral" e ele pedir material mas NÃO Disser o nome da música, NÃO DEVE usar action: "search". Use action: "chat" e peça a música.
+4. FALTA DE VOZ EXÍGIDA (ÁUDIOS do Coral): Se a intenção for baixar áudios/kits de voz, e o usuário NÃO especificar fisicamente qual é o naipe dele na frase (soprano, contralto, tenor, baixo), É PROIBIDO usar action: "search". Retorne action: "chat" e pergunte qual a voz ele quer (ex: "Vi que pediu o kit, mas qual é a sua voz (tenor, baixo...)? Por favor, peça tudo junto numa nova mensagem!"). Nunca envie ou deduza um áudio aleatório!
+5. FALTA DE VOLUME (Livros EGW): Se ele pedir os seguintes livros fracionados: "Mensagens Escolhidas" (vols 1 a 3), "Mente, Caráter e Personalidade" (vols 1 e 2), "Testemunhos para a Igreja" (vols 1 a 9) ou "Testemunhos Seletos" (vols 1 a 3), E NÃO ESPECIFICAR JUNTAMENTE o número do volume que deseja, É PROIBIDO usar action: "search". Retorne action: "chat" e pergunte qual volume ele quer daquele livro específico.
+6. EXTRAÇÃO: song_name abriga títulos de livros, números de hinos, etc. Converta para Title Case.
 
 Exemplos de interação:
 
