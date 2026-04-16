@@ -50,7 +50,7 @@ app.post('/webhook', async (req, res) => {
 
                 let driveResult = null;
                 if (intent.action === 'search') {
-                  driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part);
+                  driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part, intent.category);
                   console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
 
                   if (driveResult.found) {
