@@ -131,11 +131,24 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         files = rawFiles;
       }
 
-      // TRATAMENTO VIP PARA HINÁRIO POR NÚMERO (quando o usuário digita "hino 1", "hino 564", etc)
-      if (category === 'hinario' && !isNaN(song_name.trim())) {
-        const numToFind = parseInt(song_name.trim(), 10);
+      // TRATAMENTO VIP PARA HINÁRIO: Procura capturar o número do hino se houver na string
+      let numToFind = null;
+      if (category === 'hinario') {
+         // Se a pessoa digitar só o número ("1", "564")
+         if (!isNaN(song_name.trim())) {
+            numToFind = parseInt(song_name.trim(), 10);
+         } else {
+            // Se a IA cuspir o nome com o número na frente ("001 - Santo Santo")
+            const prefixMatch = song_name.trim().match(/^0*(\d+)/);
+            if (prefixMatch) {
+              numToFind = parseInt(prefixMatch[1], 10);
+            }
+         }
+      }
+
+      if (numToFind !== null) {
         const exactMatch = files.find(f => {
-          const match = f.name.match(/^(\d+)/); // Captura os números no início do nome do arquivo
+          const match = f.name.match(/^0*(\d+)/); // Captura os números no início do nome do arquivo no Drive (ex: 001 - Nome.txt)
           return match && parseInt(match[1], 10) === numToFind;
         });
 
@@ -151,9 +164,15 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         }
       }
 
-      // Se não era número ou se era EGW, vai pro Fuse
-      // AUMENTADO O THRESHOLD DE 0.40 para 0.65 (isso permite que 'Santo Santo Santo' encontre '001 - Santo, Santo, Santo!.txt')
-      const fuse = new Fuse(files, { keys: ['name'], threshold: 0.65, ignoreLocation: true, includeScore: true });
+      // Se não era número, vai pro Fuse com inteligência "ignoreFieldNorm"
+      // ignoreFieldNorm remove a punição que o algoritmo dá quando você pesquisa uma palavra pequena e o arquivo tem um nome muito longo!
+      const fuse = new Fuse(files, { 
+         keys: ['name'], 
+         threshold: 0.65, 
+         ignoreLocation: true, 
+         includeScore: true,
+         ignoreFieldNorm: true 
+      });
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) {
