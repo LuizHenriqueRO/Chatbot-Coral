@@ -67,7 +67,7 @@ export async function parseIntent(message) {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-0125", // Ou outro modelo, como gpt-4-turbo-preview
+      model: "gpt-4o-mini", // Modelo reconfigurado para a nova arquitetura de alta performance e baixo custo
       messages: [
         { role: "system", content: INTENT_SYSTEM_PROMPT },
         { role: "user", content: message }
