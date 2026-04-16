@@ -52,6 +52,7 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       const foldersRes = await drive.files.list({
         q: `'${GOOGLE_DRIVE_CORAL_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
         fields: 'files(id, name)',
+        pageSize: 1000,
       });
       const folders = foldersRes.data.files || [];
 
@@ -70,6 +71,7 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       const filesRes = await drive.files.list({
         q: `'${bestFolder.id}' in parents and trashed = false`,
         fields: 'files(id, name, mimeType, webContentLink)',
+        pageSize: 1000,
       });
       let files = filesRes.data.files || [];
 
@@ -115,6 +117,7 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       const fileListRes = await drive.files.list({
         q: `'${rootId}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
         fields: 'files(id, name, mimeType, webContentLink)',
+        pageSize: 1000,
       });
       let rawFiles = fileListRes.data.files || [];
 
