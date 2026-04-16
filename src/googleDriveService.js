@@ -141,43 +141,96 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         files = rawFiles;
       }
 
-      // TRATAMENTO VIP DE COGNIÇÃO SEMÂNTICA EXCLUSIVO PARA O HINÁRIO!
-      if (category === 'hinario' && openaiClient) {
-         try {
-           const promptContext = files.map(f => `${f.id}|${f.name}`).join('\n');
-           const prompt = `Você é um indexador mestre do Hinário.
+      // TRATAMENTO VIP DE LÓGICA HÍBRIDA EXCLUSIVA PARA O HINÁRIO!
+      if (category === 'hinario') {
+         // ==========================================
+         // PASSO 1: CAMADA MATEMÁTICA (Match Perfeito)
+         // ==========================================
+         let numToFind = null;
+         if (!isNaN(song_name.trim())) {
+             numToFind = parseInt(song_name.trim(), 10);
+         } else {
+             const prefixMatch = song_name.trim().match(/^0*(\d+)/);
+             if (prefixMatch) {
+               numToFind = parseInt(prefixMatch[1], 10);
+             }
+         }
+
+         if (numToFind !== null) {
+            const exactMatch = files.find(f => {
+              const match = f.name.match(/^0*(\d+)/); 
+              return match && parseInt(match[1], 10) === numToFind;
+            });
+
+            if (exactMatch) {
+              return {
+                found: true,
+                file_id: exactMatch.id,
+                file_name: exactMatch.name,
+                mime_type: exactMatch.mimeType,
+                song_folder: category,
+                score: 1.0 
+              };
+            }
+         }
+
+         // ==========================================
+         // PASSO 2: CAMADA FUZZY STRICT (Aproximação alta sem gastar IA)
+         // ==========================================
+         const strictFuse = new Fuse(files, { keys: ['name'], threshold: 0.35, ignoreLocation: true, ignoreFieldNorm: true });
+         const strictResults = strictFuse.search(song_name);
+         if (strictResults.length > 0) {
+            const bestFile = strictResults[0].item;
+            return {
+               found: true,
+               file_id: bestFile.id,
+               file_name: bestFile.name,
+               mime_type: bestFile.mimeType,
+               song_folder: category,
+               score: 1.0 
+            };
+         }
+
+         // ==========================================
+         // PASSO 3: CAMADA SEMÂNTICA CEREBRAL (Rede de Segurança Final)
+         // ==========================================
+         if (openaiClient) {
+           try {
+             const promptContext = files.map(f => `${f.id}|${f.name}`).join('\n');
+             const prompt = `Você é um indexador mestre do Hinário.
 O usuário quer o arquivo para o hino: "${song_name}".
 Abaixo está a lista completa de arquivos no formato ID|NOME.
-Analise semanticamente qual NOME corresponde ao pedido do usuário. Pode haver números isolados, abreviações ou formatações inesperadas.
-Sua regra suprema: Retorne APENAS e EXCLUSIVAMENTE a string do ID do arquivo correspondente. Se não houver correspondência possível na lista, retorne a exata palavra "null" (em minúsculo e sem aspas). 
+Analise semanticamente qual NOME melhor corresponde ao pedido do usuário. Interprete sinônimos, pontuação ou formatações diferentes.
+Sua regra suprema: Retorne APENAS e EXCLUSIVAMENTE a string do ID do arquivo correspondente. Se não houver correspondência ou a similaridade for baixa, retorne a exata palavra "null" (em minúsculo e sem aspas). Nunca retorne algo além do ID.
 
 Arquivos na nuvem:
 ${promptContext}
 `;
-           const completion = await openaiClient.chat.completions.create({
-             model: "gpt-4o-mini",
-             messages: [{ role: "user", content: prompt }],
-             temperature: 0.0,
-           });
+             const completion = await openaiClient.chat.completions.create({
+               model: "gpt-4o-mini",
+               messages: [{ role: "user", content: prompt }],
+               temperature: 0.0,
+             });
 
-           const targetId = completion.choices[0].message.content.trim();
-           if (targetId && targetId !== "null") {
-              const bestFile = files.find(f => f.id === targetId);
-              if (bestFile) {
-                 return {
-                   found: true,
-                   file_id: bestFile.id,
-                   file_name: bestFile.name,
-                   mime_type: bestFile.mimeType,
-                   song_folder: category,
-                   score: 1.0 // Precisão cirúrgica via IA
-                 };
-              }
+             const targetId = completion.choices[0].message.content.trim();
+             if (targetId && targetId !== "null" && targetId !== null) {
+                const bestFile = files.find(f => f.id === targetId);
+                if (bestFile) {
+                   return {
+                     found: true,
+                     file_id: bestFile.id,
+                     file_name: bestFile.name,
+                     mime_type: bestFile.mimeType,
+                     song_folder: category,
+                     score: 1.0
+                   };
+                }
+             }
+           } catch (error) {
+             console.error("OpenAI Semantic Search error:", error);
            }
-         } catch (error) {
-           console.error("OpenAI Semantic Search error:", error);
          }
-         return { found: false, error_message: `Não encontrei referências confiáveis de '${song_name}' no diretório do hinario.`, candidates: [] };
+         return { found: false, error_message: `Não encontrei referências seguras de '${song_name}' no diretório do hinario.`, candidates: [] };
       }
 
       // Se não for Hinário (ex: EGW), usamos o maravilhoso buscador cego "Fuse"
