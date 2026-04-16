@@ -131,7 +131,29 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         files = rawFiles;
       }
 
-      const fuse = new Fuse(files, { keys: ['name'], threshold: 0.40, ignoreLocation: true, includeScore: true });
+      // TRATAMENTO VIP PARA HINÁRIO POR NÚMERO (quando o usuário digita "hino 1", "hino 564", etc)
+      if (category === 'hinario' && !isNaN(song_name.trim())) {
+        const numToFind = parseInt(song_name.trim(), 10);
+        const exactMatch = files.find(f => {
+          const match = f.name.match(/^(\d+)/); // Captura os números no início do nome do arquivo
+          return match && parseInt(match[1], 10) === numToFind;
+        });
+
+        if (exactMatch) {
+          return {
+            found: true,
+            file_id: exactMatch.id,
+            file_name: exactMatch.name,
+            mime_type: exactMatch.mimeType,
+            song_folder: category,
+            score: 1.0
+          };
+        }
+      }
+
+      // Se não era número ou se era EGW, vai pro Fuse
+      // AUMENTADO O THRESHOLD DE 0.40 para 0.65 (isso permite que 'Santo Santo Santo' encontre '001 - Santo, Santo, Santo!.txt')
+      const fuse = new Fuse(files, { keys: ['name'], threshold: 0.65, ignoreLocation: true, includeScore: true });
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) {
