@@ -1,18 +1,26 @@
 import { google } from 'googleapis';
 import Fuse from 'fuse.js';
+import OpenAI from 'openai';
 
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const GOOGLE_DRIVE_CORAL_FOLDER_ID = process.env.GOOGLE_DRIVE_CORAL_FOLDER_ID || process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
 const GOOGLE_DRIVE_HINARIO_FOLDER_ID = process.env.GOOGLE_DRIVE_HINARIO_FOLDER_ID;
 const GOOGLE_DRIVE_EGW_FOLDER_ID = process.env.GOOGLE_DRIVE_EGW_FOLDER_ID;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 let jwtClient;
 let drive;
+let openaiClient;
 
 function initGoogleDrive() {
   if (!GOOGLE_SERVICE_ACCOUNT_JSON || (!GOOGLE_DRIVE_CORAL_FOLDER_ID && !GOOGLE_DRIVE_HINARIO_FOLDER_ID && !GOOGLE_DRIVE_EGW_FOLDER_ID)) {
     console.error('Google Drive environment variables not set.');
     return;
+  }
+
+  // Inicializa a IA na Nuvem
+  if (!openaiClient && OPENAI_API_KEY) {
+    openaiClient = new OpenAI({ apiKey: OPENAI_API_KEY });
   }
 
   const credentials = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
@@ -114,7 +122,6 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         return { found: false, error_message: `A pasta do ${category} está vazia ou o e-mail do Bot ainda não recebeu permissão de Leitor nela.` };
       }
 
-      // Tentativa de filtro strict
       let files = rawFiles.filter(file => {
         // PERMISSAO EXPLICITA DO HINARIO PRA TEXTOS COMO VOCE MENCIONOU:
         if (category === 'hinario' && (file.mimeType === 'text/plain' || file.name.endsWith('.txt'))) return true;
@@ -131,41 +138,46 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         files = rawFiles;
       }
 
-      // TRATAMENTO VIP PARA HINÁRIO: Procura capturar o número do hino se houver na string
-      let numToFind = null;
-      if (category === 'hinario') {
-         // Se a pessoa digitar só o número ("1", "564")
-         if (!isNaN(song_name.trim())) {
-            numToFind = parseInt(song_name.trim(), 10);
-         } else {
-            // Se a IA cuspir o nome com o número na frente ("001 - Santo Santo")
-            const prefixMatch = song_name.trim().match(/^0*(\d+)/);
-            if (prefixMatch) {
-              numToFind = parseInt(prefixMatch[1], 10);
-            }
+      // TRATAMENTO VIP DE COGNIÇÃO SEMÂNTICA EXCLUSIVO PARA O HINÁRIO!
+      if (category === 'hinario' && openaiClient) {
+         try {
+           const promptContext = files.map(f => `${f.id}|${f.name}`).join('\n');
+           const prompt = `Você é um indexador mestre do Hinário.
+O usuário quer o arquivo para o hino: "${song_name}".
+Abaixo está a lista completa de arquivos no formato ID|NOME.
+Analise semanticamente qual NOME corresponde ao pedido do usuário. Pode haver números isolados, abreviações ou formatações inesperadas.
+Sua regra suprema: Retorne APENAS e EXCLUSIVAMENTE a string do ID do arquivo correspondente. Se não houver correspondência possível na lista, retorne a exata palavra "null" (em minúsculo e sem aspas). 
+
+Arquivos na nuvem:
+${promptContext}
+`;
+           const completion = await openaiClient.chat.completions.create({
+             model: "gpt-4o-mini",
+             messages: [{ role: "user", content: prompt }],
+             temperature: 0.0,
+           });
+
+           const targetId = completion.choices[0].message.content.trim();
+           if (targetId && targetId !== "null") {
+              const bestFile = files.find(f => f.id === targetId);
+              if (bestFile) {
+                 return {
+                   found: true,
+                   file_id: bestFile.id,
+                   file_name: bestFile.name,
+                   mime_type: bestFile.mimeType,
+                   song_folder: category,
+                   score: 1.0 // Precisão cirúrgica via IA
+                 };
+              }
+           }
+         } catch (error) {
+           console.error("OpenAI Semantic Search error:", error);
          }
+         return { found: false, error_message: `Não encontrei referências confiáveis de '${song_name}' no diretório do hinario.`, candidates: [] };
       }
 
-      if (numToFind !== null) {
-        const exactMatch = files.find(f => {
-          const match = f.name.match(/^0*(\d+)/); // Captura os números no início do nome do arquivo no Drive (ex: 001 - Nome.txt)
-          return match && parseInt(match[1], 10) === numToFind;
-        });
-
-        if (exactMatch) {
-          return {
-            found: true,
-            file_id: exactMatch.id,
-            file_name: exactMatch.name,
-            mime_type: exactMatch.mimeType,
-            song_folder: category,
-            score: 1.0
-          };
-        }
-      }
-
-      // Se não era número, vai pro Fuse com inteligência "ignoreFieldNorm"
-      // ignoreFieldNorm remove a punição que o algoritmo dá quando você pesquisa uma palavra pequena e o arquivo tem um nome muito longo!
+      // Se não for Hinário (ex: EGW), usamos o maravilhoso buscador cego "Fuse"
       const fuse = new Fuse(files, { 
          keys: ['name'], 
          threshold: 0.65, 
@@ -176,7 +188,7 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) {
-        return { found: false, error_message: `Não encontrei '${song_name}' no diretório do ${category}. Verifique se o nome está exato ou mande uma mensagem pro suporte.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
+        return { found: false, error_message: `Não encontrei '${song_name}' no diretório do ${category}. Verifique se o nome está exato.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
       }
 
       const bestFile = fuzzyResults[0].item;
@@ -191,8 +203,8 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
     }
 
   } catch (error) {
-    console.error('Google Drive API error:', error);
-    return { found: false, error_message: 'Erro ao buscar no Google Drive.' };
+    console.error('Google Drive API/Busca error:', error);
+    return { found: false, error_message: 'Erro ao buscar arquivos nas nuvens.' };
   }
 }
 
