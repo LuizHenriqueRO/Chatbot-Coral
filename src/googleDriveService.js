@@ -1,4 +1,3 @@
-
 import { google } from 'googleapis';
 import Fuse from 'fuse.js';
 
@@ -105,25 +104,38 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         return { found: false, error_message: `A pasta raiz para a categoria '${category}' não foi configurada nas variáveis.` };
       }
 
-      const filesRes = await drive.files.list({
+      const fileListRes = await drive.files.list({
         q: `'${rootId}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
         fields: 'files(id, name, mimeType, webContentLink)',
       });
-      let files = filesRes.data.files || [];
+      let rawFiles = fileListRes.data.files || [];
 
-      // Accept only specific formats depending on the AI determination if provided
-      files = files.filter(file => {
+      if (rawFiles.length === 0) {
+        return { found: false, error_message: `A pasta do ${category} está vazia ou o e-mail do Bot ainda não recebeu permissão de Leitor nela.` };
+      }
+
+      // Tentativa de filtro strict
+      let files = rawFiles.filter(file => {
+        // PERMISSAO EXPLICITA DO HINARIO PRA TEXTOS COMO VOCE MENCIONOU:
+        if (category === 'hinario' && (file.mimeType === 'text/plain' || file.name.endsWith('.txt'))) return true;
+        if (category === 'egw' && (file.mimeType === 'application/pdf' || file.name.endsWith('.pdf'))) return true;
+        
         if (file_type === 'txt') return file.mimeType === 'text/plain' || file.name.endsWith('.txt');
         if (file_type === 'pdf') return file.mimeType === 'application/pdf' || file.name.endsWith('.pdf');
         if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|aac|flac|wma|opus)$/i);
         return true; 
       });
 
+      // Fallback inteligente caso a IA tente podar tudo ou caso vocẽ adicione novos tipos que a IA não previu
+      if (files.length === 0) {
+        files = rawFiles;
+      }
+
       const fuse = new Fuse(files, { keys: ['name'], threshold: 0.40, ignoreLocation: true, includeScore: true });
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) {
-        return { found: false, error_message: `Não encontrei '${song_name}' no diretório do ${category}.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
+        return { found: false, error_message: `Não encontrei '${song_name}' no diretório do ${category}. Verifique se o nome está exato ou mande uma mensagem pro suporte.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
       }
 
       const bestFile = fuzzyResults[0].item;
@@ -156,7 +168,5 @@ export async function downloadFileBuffer(fileId) {
     { responseType: 'arraybuffer' }
   );
 
-  // Return the ArrayBuffer natively given by axios/googleapis
   return response.data;
 }
-
