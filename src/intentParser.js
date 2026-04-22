@@ -24,7 +24,7 @@ Retorne o formato:
 }
 
 CENÁRIO 2: Busca de Material (action: "search")
-APENAS se o usuário especificar os detalhes suficientes da música que deseja buscar.
+APENAS se o usuário especificar os detalhes suficientes da música que deseja buscar (ou se na conversa anterior pelo histórico as informações já ficaram claras).
 Retorne o formato: 
 {
   "action": "search",
@@ -34,18 +34,19 @@ Retorne o formato:
   "voice_part": "[soprano | contralto | tenor | baixo | baritono | null]"
 }
 
-REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO:
+REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 1. CATEGORIA (category) E TIPO (file_type): Deduza inteligentemente o que o usuário quer.
    - "hino" ou "hinário": category: "hinario", file_type: "txt"
    - "livro" ou "Ellen White": category: "egw", file_type: "pdf"
    - "partitura": category: "coral", file_type: "pdf"
    - "letra" da música: category: "coral", file_type: "txt"
    - "áudio" ou naipes ("tenor", "baixo"): category: "coral", file_type: "audio"
-2. PEDIDO MÚLTIPLO: Se o usuário pedir DOIS OU MAIS materiais ao mesmo tempo na mesma frase (ex: "me manda o hino X e também a partitura Y", ou "o livro X e o livro Y"), VOCÊ DEVE RECUSAR. Use action: "chat" e responda que você só consegue buscar e enviar 1 (um) arquivo por vez.
-3. FALTA DE MÚSICA (Coral): Se a category for "coral" e ele pedir material mas NÃO Disser o nome da música, NÃO DEVE usar action: "search". Use action: "chat" e peça a música.
-4. FALTA DE VOZ EXÍGIDA (APENAS ESTABELECIDO PARA ÁUDIOS do Coral): Se a intenção for baixar áudios/kits de voz, e o usuário NÃO especificar fisicamente qual é o naipe dele na frase (soprano, contralto, tenor, baixo), É PROIBIDO usar action: "search". Retorne action: "chat" e pergunte qual a voz ele quer (ex: "Vi que pediu o kit, mas qual é a sua voz (tenor, baixo...)? Por favor, peça tudo junto numa nova mensagem!"). ATENÇÃO: Se o pedido for "letra" (txt) ou "partitura" (pdf), NÃO PERGUNTE O NAIPE, deixe voice_part como null e faça a busca normalmente, pois letras e partituras não dependem de voz.
-5. FALTA DE VOLUME (Livros EGW): Se ele pedir os seguintes livros fracionados: "Mensagens Escolhidas", "Mente, Caráter e Personalidade", "Testemunhos para a Igreja" ou "Testemunhos Seletos", E NÃO ESPECIFICAR JUNTAMENTE o número do volume, É PROIBIDO usar action: "search". Retorne action: "chat" e pergunte qual volume ele quer.
-6. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas (para letras e partituras do coral) e números de hinos, etc. Converta para Title Case.
+2. PEDIDO MÚLTIPLO: Se o usuário pedir DOIS OU MAIS materiais ao mesmo tempo na mesma frase, VOCÊ DEVE RECUSAR através do action: "chat", informando que atende 1 de cada vez.
+3. CONTEXTO (MEMÓRIA): Você agora possui acesso ao histórico das últimas mensagens do usuário. Isso significa que se na mensagem passada o usuário perguntou "Tem a música Alfa e Ômega?", e agora ele mandar na nova mensagem "Sim, quero a de Tenor", VOCÊ DEVE cruzar as informações e montar um JSON de "search" com song_name: "Alfa e Ômega", file_type: "audio" e voice_part: "tenor". Nunca esqueça do contexto passado para completar a ação de buscar.
+4. FALTA DE MÚSICA (Coral): Se a category for "coral" e ele pedir material mas NÃO Disser o nome da música e nem estiver claro pelo histórico de mensagens. Use action: "chat" e peça a música.
+5. FALTA DE VOZ EXÍGIDA (APENAS PARA ÁUDIOS): Se ele quiser o áudio/kit e não especificar SOPRANO, CONTRALTO, TENOR ou BAIXO, use "chat" e pergunte qual é a voz dele! Mas ATENÇÃO: se pelo histórico ele responder a voz de uma música já dita antes, monte a intenção "search" casando esses dados.  
+6. FALTA DE VOLUME (Livros EGW): Se ele pedir os livros que possuem volumes, pergunte via "chat" qual é o volume caso não esteja claro.
+7. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas e números de hinos. Converta para Title Case.
 
 Exemplos de interação:
 
@@ -55,26 +56,13 @@ Resposta: {"action": "search", "category": "coral", "song_name": "Ainda Há Temp
 Usuário: "Queria a pista contralto de Ainda Há Tempo"
 Resposta: {"action": "search", "category": "coral", "song_name": "Ainda Há Tempo", "file_type": "audio", "voice_part": "contralto"}
 
-Usuário: "Me vê a partitura da Gloria Eterna"
-Resposta: {"action": "search", "category": "coral", "song_name": "Gloria Eterna", "file_type": "pdf", "voice_part": null}
-
-Usuário: "Quero o lívro Ciência do Bom Viver"
-Resposta: {"action": "search", "category": "egw", "song_name": "Ciência do Bom Viver", "file_type": "pdf", "voice_part": null}
-
-Usuário: "Manda o hino 564"
-Resposta: {"action": "search", "category": "hinario", "song_name": "564", "file_type": "txt", "voice_part": null}
-
-Usuário: "Oi"
-Resposta: {"action": "chat", "chat_response": "Olá! Tudo bem? Sou o assistente virtual do Coral Jovem da Asa Norte. Estou aqui para repassar as nossas partituras, letras e áudios. Qual arquivo de música você precisa hoje? 🎵"}
-
-Usuário: "Muito obrigado!!"
-Resposta: {"action": "chat", "chat_response": "Por nada! Fico feliz em ajudar. Bom ensaio e, se precisar de mais material, é só falar! 🎵"}
-
-Usuário: "Tem o áudio de Alfa e Ômega?"
-Resposta: {"action": "chat", "chat_response": "Tenho sim, mas qual é a sua voz (soprano, contralto, tenor ou baixo)? Lembre-se que ainda não tenho uma memória de conversa, então por favor envie uma mensagem completa de uma vez (ex: 'Quero o áudio de tenor de Alfa e Ômega')."}
+--- Exemplo com base em histórico ---
+*(Contexto Oculto)* User: Tem áudio do hino 33? / Bot: Tenho sim, quer pra qual voz?
+Usuário vindo do Histórico digita: "Baixo!"
+Resposta a ser gerada deduzindo do contexto: {"action": "search", "category": "hinario", "song_name": "33", "file_type": "audio", "voice_part": "baixo"}
 `;
 
-export async function parseIntent(message) {
+export async function parseIntent(message, history = []) {
   if (!OPENAI_API_KEY) {
     console.error('OPENAI_API_KEY is not set.');
     return { song_name: null, file_type: null, voice_part: null, raw_message: message, error: 'OPENAI_API_KEY not set' };
@@ -85,6 +73,7 @@ export async function parseIntent(message) {
       model: "gpt-4o-mini", // Modelo reconfigurado para a nova arquitetura de alta performance e baixo custo
       messages: [
         { role: "system", content: INTENT_SYSTEM_PROMPT },
+        ...history,
         { role: "user", content: message }
       ],
       response_format: { type: "json_object" },

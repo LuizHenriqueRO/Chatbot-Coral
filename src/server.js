@@ -1,10 +1,10 @@
-
 import express from 'express';
 import { google } from 'googleapis';
 import { parseIntent } from './intentParser.js';
 import { searchDrive, downloadFileBuffer } from './googleDriveService.js';
 import { buildResponse } from './responseBuilder.js';
 import { uploadMediaToWhatsApp } from './whatsappMediaService.js';
+import { getHistory, addMessageToHistory } from './memoryService.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -44,8 +44,11 @@ app.post('/webhook', async (req, res) => {
 
             if (message && message.type === 'text') {
               try {
-                // Processamento com IA para todas as mensagens
-                const intent = await parseIntent(message.text.body);
+                // Recuperar do histórico da IA
+                const history = await getHistory(sender_phone);
+                
+                // Processamento com IA para todas as mensagens repassando contexto
+                const intent = await parseIntent(message.text.body, history);
                 console.log('Intent parsed:', JSON.stringify(intent, null, 2));
 
                 let driveResult = null;
@@ -74,8 +77,14 @@ app.post('/webhook', async (req, res) => {
                   }
                 }
 
+                // Salvar a pergunta do usuário no final que já foi deduzida e processada
+                await addMessageToHistory(sender_phone, 'user', message.text.body);
+
                 const response = buildResponse(intent, driveResult, sender_phone);
                 console.log('Response built:', JSON.stringify(response, null, 2));
+                
+                // Salvar resposta do bot
+                await addMessageToHistory(sender_phone, 'assistant', response.message_text);
 
                 await sendWhatsAppMessage(response.api_payload);
               } catch (error) {
