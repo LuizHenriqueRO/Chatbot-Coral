@@ -28,7 +28,7 @@ APENAS se o usuário especificar os detalhes suficientes da música que deseja b
 Retorne o formato: 
 {
   "action": "search",
-  "category": "[coral | hinario | egw | null]",
+  "category": "[coral | hinario | egw | licao | null]",
   "song_name": "[Nome da Música, Hino ou Livro - string, em Title Case]",
   "file_type": "[audio | pdf | txt | null]",
   "voice_part": "[soprano | contralto | tenor | baixo | baritono | null]"
@@ -37,6 +37,7 @@ Retorne o formato:
 REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 1. CATEGORIA (category) E TIPO (file_type): Deduza inteligentemente o que o usuário quer.
    - "hino" ou "hinário": category: "hinario", file_type: "txt". ATENÇÃO: Hinos NUNCA possuem áudio ou naipes (voz), são APENAS letras (txt). Se o usuário pedir um hino, retorne 'search' com 'hinario' e 'txt' imediatamente, sem perguntar naipe.
+   - "lição" ou "escola sabatina": category: "licao", file_type: "pdf". O 'song_name' deve ser obrigatoriamente "Jovens" ou "Adultos". Se não especificar, use action "chat" e pergunte qual lição deseja.
    - "livro" ou "Ellen White": category: "egw", file_type: "pdf"
    - "partitura": category: "coral", file_type: "pdf"
    - "letra" da música: category: "coral", file_type: "txt"
@@ -46,7 +47,8 @@ REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 4. FALTA DE MÚSICA (Coral): Se a category for "coral" e ele pedir material mas NÃO Disser o nome da música e nem estiver claro pelo histórico de mensagens. Use action: "chat" e peça a música.
 5. FALTA DE VOZ EXIGIDA (APENAS PARA ÁUDIOS DE CORAL): Se ele quiser o áudio/kit (category: "coral") e não especificar SOPRANO, CONTRALTO, TENOR ou BAIXO, use "chat" e pergunte qual é a voz dele! Mas ATENÇÃO: se pelo histórico ele responder a voz de uma música já dita antes, monte a intenção "search" casando esses dados.  
 6. FALTA DE VOLUME (Livros EGW): Se ele pedir os livros que possuem volumes, pergunte via "chat" qual é o volume caso não esteja claro.
-7. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas e números de hinos. Converta para Title Case.
+7. FALTA DE LIÇÃO (Escola Sabatina): Se ele pedir a lição e não disser se é Jovens ou Adultos, use "chat" e pergunte.
+8. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas, números de hinos e tipo de lição ("Jovens" ou "Adultos"). Converta para Title Case.
 
 Exemplos de interação:
 

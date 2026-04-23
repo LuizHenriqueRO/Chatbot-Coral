@@ -6,6 +6,7 @@ const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const GOOGLE_DRIVE_CORAL_FOLDER_ID = process.env.GOOGLE_DRIVE_CORAL_FOLDER_ID || process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
 const GOOGLE_DRIVE_HINARIO_FOLDER_ID = process.env.GOOGLE_DRIVE_HINARIO_FOLDER_ID;
 const GOOGLE_DRIVE_EGW_FOLDER_ID = process.env.GOOGLE_DRIVE_EGW_FOLDER_ID;
+const GOOGLE_DRIVE_LICAO_FOLDER_ID = process.env.GOOGLE_DRIVE_LICAO;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 let jwtClient;
@@ -13,7 +14,7 @@ let drive;
 let openaiClient;
 
 function initGoogleDrive() {
-  if (!GOOGLE_SERVICE_ACCOUNT_JSON || (!GOOGLE_DRIVE_CORAL_FOLDER_ID && !GOOGLE_DRIVE_HINARIO_FOLDER_ID && !GOOGLE_DRIVE_EGW_FOLDER_ID)) {
+  if (!GOOGLE_SERVICE_ACCOUNT_JSON || (!GOOGLE_DRIVE_CORAL_FOLDER_ID && !GOOGLE_DRIVE_HINARIO_FOLDER_ID && !GOOGLE_DRIVE_EGW_FOLDER_ID && !GOOGLE_DRIVE_LICAO_FOLDER_ID)) {
     console.error('Google Drive environment variables not set.');
     return;
   }
@@ -47,10 +48,12 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
   }
 
   try {
-    if (category === 'coral') {
+    if (category === 'coral' || category === 'licao') {
+      let rootFolderId = category === 'coral' ? GOOGLE_DRIVE_CORAL_FOLDER_ID : GOOGLE_DRIVE_LICAO_FOLDER_ID;
+
       // List all song folders in root
       const foldersRes = await drive.files.list({
-        q: `'${GOOGLE_DRIVE_CORAL_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        q: `'${rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
         fields: 'files(id, name)',
         pageSize: 1000,
       });
@@ -61,7 +64,8 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) { 
-        return { found: false, error_message: `Não encontrei a pasta sonora para '${song_name}' no Coral.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
+        let localName = category === 'coral' ? 'no Coral' : 'na Lição da Escola Sabatina';
+        return { found: false, error_message: `Não encontrei a pasta para '${song_name}' ${localName}.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
       }
 
       const bestFolder = fuzzyResults[0].item;

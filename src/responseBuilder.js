@@ -20,7 +20,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
         api_payload.type = 'audio';
         api_payload.audio = { id: driveResult.media_id };
       } else if (intent.file_type === 'pdf') {
-        file_label = 'a partitura';
+        file_label = intent.category === 'licao' ? 'a lição da Escola Sabatina' : 'a partitura';
         message_type = 'document';
         api_payload.type = 'document';
         let safe_pdf_name = driveResult.file_name.toLowerCase().endsWith('.pdf') ? driveResult.file_name : `${driveResult.file_name}.pdf`;
@@ -42,7 +42,11 @@ export function buildResponse(intent, driveResult, recipient_phone) {
       }
 
       if (message_type !== 'text') {
-        message_text = `Aqui está ${file_label} de *${intent.song_name}*! 🎶 Bons ensaios!`;
+        if (intent.category === 'licao') {
+          message_text = `Aqui está ${file_label} de *${intent.song_name}*! 📖 Bons estudos!`;
+        } else {
+          message_text = `Aqui está ${file_label} de *${intent.song_name}*! 🎶 Bons ensaios!`;
+        }
       }
     } else {
       // File not found
