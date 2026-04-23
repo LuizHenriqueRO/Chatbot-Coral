@@ -68,7 +68,7 @@ app.post('/webhook', async (req, res) => {
 
                       if (intent.file_type === 'txt') {
                         console.log('Transcrevendo arquivo txt para texto...');
-                        driveResult.text_content = buffer.toString('utf-8');
+                        driveResult.text_content = Buffer.from(buffer).toString('utf-8');
                       } else {
                         const media_id = await uploadMediaToWhatsApp(buffer, driveResult.mime_type, safe_filename);
                         console.log('Media mapped successfully via Meta API. media_id:', media_id);
