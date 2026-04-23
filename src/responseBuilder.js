@@ -13,7 +13,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
     api_payload.text = { body: message_text };
   } else if (intent.action === 'info') {
     if (intent.info_type === 'agenda') {
-      message_text = `🗓️ *Agenda do Coral* 📍 \n\n*Agenda do Coral:* (1° semestre)\n12/04 - domingo 19h - IASD Asa Norte\n18/04 - sábado 9h - IASD Asa Norte\n25/04 - sábado 19h - confraternização\n09/05 - sábado 19h - quadras da Asa Norte (serenata das mães)\n31/05 - domingo 19h - IASD Asa Norte\n13/06 - sábado 9h - IASD Asa Norte\n27/06 - sábado 18h - Vigília`;
+      message_text = `🗓️ *Agenda do Coral* 📍 \n\n*Agenda do Coral:* (1° semestre)\n09/05 - sábado 19h - quadras da Asa Norte (serenata das mães)\n31/05 - domingo 19h - IASD Asa Norte\n13/06 - sábado 9h - IASD Asa Norte\n27/06 - sábado 18h - Vigília`;
       api_payload.type = 'text';
       api_payload.text = { body: message_text };
     } else if (intent.info_type === 'link_kits') {
