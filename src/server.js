@@ -66,9 +66,14 @@ app.post('/webhook', async (req, res) => {
                       if (intent.file_type === 'pdf' && !safe_filename.toLowerCase().endsWith('.pdf')) safe_filename += '.pdf';
                       if (intent.file_type === 'txt' && !safe_filename.toLowerCase().endsWith('.txt')) safe_filename += '.txt';
 
-                      const media_id = await uploadMediaToWhatsApp(buffer, driveResult.mime_type, safe_filename);
-                      console.log('Media mapped successfully via Meta API. media_id:', media_id);
-                      driveResult.media_id = media_id;
+                      if (intent.file_type === 'txt') {
+                        console.log('Transcrevendo arquivo txt para texto...');
+                        driveResult.text_content = buffer.toString('utf-8');
+                      } else {
+                        const media_id = await uploadMediaToWhatsApp(buffer, driveResult.mime_type, safe_filename);
+                        console.log('Media mapped successfully via Meta API. media_id:', media_id);
+                        driveResult.media_id = media_id;
+                      }
                     } catch (uploadError) {
                       console.error('Error migrating media to Meta Servers:', uploadError);
                       driveResult.found = false;

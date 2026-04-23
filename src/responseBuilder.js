@@ -26,14 +26,24 @@ export function buildResponse(intent, driveResult, recipient_phone) {
         let safe_pdf_name = driveResult.file_name.toLowerCase().endsWith('.pdf') ? driveResult.file_name : `${driveResult.file_name}.pdf`;
         api_payload.document = { id: driveResult.media_id, caption: `${driveResult.file_name} 🎶`, filename: safe_pdf_name };
       } else if (intent.file_type === 'txt') {
-        file_label = 'a letra';
-        message_type = 'document'; // Meta API usa 'document' para txt e pdf
-        api_payload.type = 'document';
-        let safe_txt_name = driveResult.file_name.toLowerCase().endsWith('.txt') ? driveResult.file_name : `${driveResult.file_name}.txt`;
-        api_payload.document = { id: driveResult.media_id, caption: `${driveResult.file_name} 🎵`, filename: safe_txt_name };
+        if (driveResult.text_content) {
+          file_label = 'a letra';
+          message_type = 'text';
+          api_payload.type = 'text';
+          message_text = `Aqui está a letra de *${intent.song_name}*:\n\n${driveResult.text_content}`;
+          api_payload.text = { body: message_text };
+        } else {
+          file_label = 'a letra';
+          message_type = 'document'; // Meta API usa 'document' para txt e pdf
+          api_payload.type = 'document';
+          let safe_txt_name = driveResult.file_name.toLowerCase().endsWith('.txt') ? driveResult.file_name : `${driveResult.file_name}.txt`;
+          api_payload.document = { id: driveResult.media_id, caption: `${driveResult.file_name} 🎵`, filename: safe_txt_name };
+        }
       }
 
-      message_text = `Aqui está ${file_label} de *${intent.song_name}*! 🎶 Bons ensaios!`;
+      if (message_type !== 'text') {
+        message_text = `Aqui está ${file_label} de *${intent.song_name}*! 🎶 Bons ensaios!`;
+      }
     } else {
       // File not found
       if (driveResult && driveResult.candidates && driveResult.candidates.length > 0) {
@@ -53,12 +63,18 @@ export function buildResponse(intent, driveResult, recipient_phone) {
     api_payload.text = { body: message_text };
   }
 
-  // Enforce 300 character limit (simplificado)
-  if (message_text.length > 300) {
-    message_text = message_text.substring(0, 297) + '...';
-    if (api_payload.text) api_payload.text.body = message_text;
-
-    if (api_payload.document) api_payload.document.caption = message_text;
+  // Enforce character limit
+  if (api_payload.type === 'text') {
+    if (message_text.length > 4000) {
+      message_text = message_text.substring(0, 3997) + '...';
+      api_payload.text.body = message_text;
+    }
+  } else {
+    // Caption limit for document/audio
+    if (message_text.length > 300) {
+      message_text = message_text.substring(0, 297) + '...';
+      if (api_payload.document) api_payload.document.caption = message_text;
+    }
   }
 
   return {
