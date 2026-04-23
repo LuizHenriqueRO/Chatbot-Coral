@@ -11,6 +11,16 @@ export function buildResponse(intent, driveResult, recipient_phone) {
     message_text = intent.chat_response || 'Olá! Como posso ajudar?';
     api_payload.type = 'text';
     api_payload.text = { body: message_text };
+  } else if (intent.action === 'info') {
+    if (intent.info_type === 'agenda') {
+      message_text = `🗓️ *Agenda do Coral* 📍 \n\n*Agenda do Coral:* (1° semestre)\n12/04 - domingo 19h - IASD Asa Norte\n18/04 - sábado 9h - IASD Asa Norte\n25/04 - sábado 19h - confraternização\n09/05 - sábado 19h - quadras da Asa Norte (serenata das mães)\n31/05 - domingo 19h - IASD Asa Norte\n13/06 - sábado 9h - IASD Asa Norte\n27/06 - sábado 18h - Vigília`;
+    } else if (intent.info_type === 'link_kits') {
+      message_text = `Aqui está o link do drive com todos os kits do coral:\nhttps://drive.google.com/drive/folders/1-Rkp2gcrDw-vprjfrjBWXgd87ai4RI6o?usp=sharing`;
+    } else {
+      message_text = `Não tenho essa informação no momento.`;
+    }
+    api_payload.type = 'text';
+    api_payload.text = { body: message_text };
   } else if (intent.action === 'search') {
     if (driveResult && driveResult.found) {
       let file_label = '';
