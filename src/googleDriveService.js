@@ -50,38 +50,83 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
 
   try {
     if (category === 'coral' || category === 'licao') {
-      let queryParents = '';
+      let candidates = [];
+
       if (category === 'coral') {
-        const parents = [];
-        if (GOOGLE_DRIVE_CORAL_FOLDER_ID) parents.push(`'${GOOGLE_DRIVE_CORAL_FOLDER_ID}' in parents`);
-        if (GOOGLE_DRIVE_LOUVOR_FOLDER_ID) parents.push(`'${GOOGLE_DRIVE_LOUVOR_FOLDER_ID}' in parents`);
-        
-        if (parents.length === 0) {
-           return { found: false, error_message: 'Nenhuma pasta raiz de coral/louvor configurada.' };
+        if (GOOGLE_DRIVE_CORAL_FOLDER_ID) {
+          const foldersRes = await drive.files.list({
+            q: `'${GOOGLE_DRIVE_CORAL_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+            fields: 'files(id, name)',
+            pageSize: 1000,
+          });
+          const folders = foldersRes.data.files || [];
+          folders.forEach(f => candidates.push({ type: 'coral_folder', id: f.id, name: f.name }));
         }
-        queryParents = `(${parents.join(' or ')})`;
+
+        if (GOOGLE_DRIVE_LOUVOR_FOLDER_ID) {
+          const filesRes = await drive.files.list({
+            q: `'${GOOGLE_DRIVE_LOUVOR_FOLDER_ID}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`,
+            fields: 'files(id, name, mimeType, webContentLink)',
+            pageSize: 1000,
+          });
+          let louvorFiles = filesRes.data.files || [];
+          
+          // Filter by file type
+          louvorFiles = louvorFiles.filter(file => {
+            if (file_type === 'txt') return file.mimeType === 'text/plain' || file.name.endsWith('.txt');
+            if (file_type === 'pdf') return file.mimeType === 'application/pdf' || file.name.endsWith('.pdf');
+            if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|aac|flac|wma|opus)$/i);
+            return false;
+          });
+
+          // Filter by voice part (if audio and voice_part present)
+          if (file_type === 'audio' && voice_part) {
+            louvorFiles = louvorFiles.filter(file => file.name.toLowerCase().includes(voice_part.toLowerCase()));
+          }
+
+          louvorFiles.forEach(f => {
+            const cleanName = f.name.replace(/\.[^/.]+$/, "");
+            candidates.push({ type: 'louvor_file', item: f, name: cleanName });
+          });
+        }
+
+        if (candidates.length === 0) {
+           return { found: false, error_message: 'Nenhuma pasta/arquivo de coral/louvor encontrado ou configurado.' };
+        }
       } else {
-        queryParents = `'${GOOGLE_DRIVE_LICAO_FOLDER_ID}' in parents`;
+        const foldersRes = await drive.files.list({
+          q: `'${GOOGLE_DRIVE_LICAO_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+          fields: 'files(id, name)',
+          pageSize: 1000,
+        });
+        const folders = foldersRes.data.files || [];
+        folders.forEach(f => candidates.push({ type: 'licao_folder', id: f.id, name: f.name }));
       }
 
-      // List all song folders in root
-      const foldersRes = await drive.files.list({
-        q: `${queryParents} and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-        fields: 'files(id, name)',
-        pageSize: 1000,
-      });
-      const folders = foldersRes.data.files || [];
-
-      // Fuzzy match folders against song_name
-      const fuse = new Fuse(folders, { keys: ['name'], threshold: 0.40, ignoreLocation: true, includeScore: true });
+      // Fuzzy match folders/files against song_name
+      const fuse = new Fuse(candidates, { keys: ['name'], threshold: 0.40, ignoreLocation: true, includeScore: true });
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) { 
         let localName = category === 'coral' ? 'no Coral/Louvor' : 'na Lição da Escola Sabatina';
-        return { found: false, error_message: `Não encontrei a pasta para '${song_name}' ${localName}.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
+        return { found: false, error_message: `Não encontrei referências para '${song_name}' ${localName}.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
       }
 
-      const bestFolder = fuzzyResults[0].item;
+      const bestMatch = fuzzyResults[0].item;
+
+      if (bestMatch.type === 'louvor_file') {
+        const bestFile = bestMatch.item;
+        return {
+          found: true,
+          file_id: bestFile.id,
+          file_name: bestFile.name,
+          mime_type: bestFile.mimeType,
+          song_folder: 'Louvor (Arquivo Direto)',
+          score: (1 - fuzzyResults[0].score)
+        };
+      }
+
+      const bestFolder = { id: bestMatch.id, name: bestMatch.name };
       const song_folder = bestFolder.name;
 
       // List files in matched folder
