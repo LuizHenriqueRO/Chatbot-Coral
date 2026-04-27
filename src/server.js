@@ -32,6 +32,8 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
+  res.status(200).send('EVENT_RECEIVED'); // Responde imediatamente para evitar retentativas da Meta (timeout)
+  
   const body = req.body;
 
   if (body.object === 'whatsapp_business_account') {
@@ -136,8 +138,6 @@ app.post('/webhook', async (req, res) => {
       }
     }
   }
-
-  res.status(200).send('EVENT_RECEIVED');
 });
 
 async function sendWhatsAppMessage(payload) {

@@ -64,7 +64,8 @@ REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 6. FALTA DE VOLUME (Livros EGW): Se ele pedir os livros que possuem volumes, pergunte via "chat" qual é o volume caso não esteja claro.
 7. FALTA DE LIÇÃO (Escola Sabatina): Se ele pedir a lição e não disser se é Jovens ou Adultos, use "chat" e pergunte.
 8. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas, números de hinos e tipo de lição ("Jovens" ou "Adultos"). Converta para Title Case. ATENÇÃO: Nomes de músicas podem parecer frases normais (ex: "eu verei"). Seja perspicaz!
-9. MENU INTERATIVO: Se o usuário enviar exatamente o título de uma das opções do menu interativo (ex: "Kits de Voz", "Partituras", "Letras das Músicas", "Hinos do Hinário", "Livros de Ellen White", "Lição Escola Sabatina"), use action "chat" perguntando detalhes específicos (ex: "Qual música você deseja a partitura?", "Qual livro você deseja ler?", "Você quer a lição de Jovens ou Adultos?"). AJA NATURALMENTE e de acordo com a opção escolhida.
+9. MENU INTERATIVO: Se o usuário enviar exatamente o título de uma das opções do menu interativo (ex: "Kits de Voz", "Partituras", "Letras das Músicas", "Hinos do Hinário", "Livros de Ellen White", "Lição Escola Sabatina"), use action "chat" perguntando detalhes específicos (ex: "Qual música você deseja a partitura?", "Qual livro você deseja ler?", "Você quer a lição de Jovens ou Adultos?"). AJA NATURALMENTE.
+   - ATENÇÃO REDOBRADA PARA "KITS DE VOZ": Quando o usuário clica nessa opção do menu, ele está apenas navegando. Quando ele responder o nome da música logo em seguida (ex: "Eu verei"), ISSO NÃO É UM PEDIDO NO PLURAL! Você DEVE tratar como singular e perguntar qual naipe ele quer, ou deduzir do histórico. NÃO retorne 4 intenções de áudio apenas porque a conversa começou com o botão "Kits de Voz"!
 
 Exemplos de interação (lembre-se que o retorno final é SEMPRE um objeto com o array "intents"):
 
