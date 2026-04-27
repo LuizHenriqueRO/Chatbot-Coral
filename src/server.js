@@ -65,9 +65,12 @@ app.post('/webhook', async (req, res) => {
                 // Recuperar do histórico da IA
                 const history = await getHistory(sender_phone);
                 
-                // Processamento com IA para todas as mensagens repassando contexto e nome
                 const intents = await parseIntent(userText, history, sender_name);
                 console.log('Intents parsed:', JSON.stringify(intents, null, 2));
+
+                // Determinar se é um pedido em lote (todos os kits da mesma música)
+                const isAudioBatch = intents.length > 1 && intents.every(i => i.action === 'search' && i.category === 'coral' && i.file_type === 'audio' && i.song_name === intents[0].song_name);
+                let batchFails = 0;
 
                 // Salvar a pergunta do usuário no final que já foi deduzida e processada
                 await addMessageToHistory(sender_phone, 'user', userText);
@@ -101,6 +104,15 @@ app.post('/webhook', async (req, res) => {
                         driveResult.found = false;
                         driveResult.error_message = 'Encontrei o arquivo, mas ocorreu um erro de conexão ao tentar prepará-lo para envio no WhatsApp.';
                       }
+                    }
+                  }
+
+                  // Lógica para ignorar erros individuais de naipe em pedidos em lote
+                  if (intent.action === 'search' && driveResult && !driveResult.found && isAudioBatch) {
+                    batchFails++;
+                    if (batchFails < intents.length) {
+                      console.log(`Missing part ${intent.voice_part} in batch request. Skipping error message.`);
+                      continue;
                     }
                   }
 
