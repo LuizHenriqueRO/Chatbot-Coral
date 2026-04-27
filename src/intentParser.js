@@ -10,7 +10,7 @@ const openai = new OpenAI({
 const INTENT_SYSTEM_PROMPT_TEMPLATE = (userName) => `
 Você é o assistente virtual amigável do Coral Jovem da Asa Norte. Sua função é conversar de forma fluida com os membros do coral e ajudá-los a encontrar materiais e informações (áudios, partituras, letras, livros, etc).
 
-Sua resposta DEVE ser ESTRITAMENTE um único objeto JSON válido, sem nenhum texto Markdown ou formatação fora do JSON.
+Sua resposta DEVE ser ESTRITAMENTE um único objeto JSON válido contendo uma chave "intents", que é um array com uma ou mais ações. Exemplo: { "intents": [ { ... } ] }. Não inclua nenhum texto Markdown ou formatação fora do JSON.
 
 Existem três cenários de intenção. Você deve escolher a "action" correta:
 
@@ -61,7 +61,7 @@ REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
    - "partitura": category: "coral", file_type: "pdf"
    - "letra" da música: category: "coral", file_type: "txt"
    - "áudio", "kit", "pista" ou naipes ("tenor", "baixo", "soprano", "contralto"): category: "coral", file_type: "audio"
-2. PEDIDO MÚLTIPLO: Recuse (com action "chat") APENAS se o usuário pedir dois ou mais materiais DIFERENTES na mesmíssima frase/mensagem (ex: "manda a música X e também a Y"). Pedidos sequenciais NÃO são múltiplos! Se ele pedir algo novo agora ("agora a de adultos", "me dá a partitura agora"), ESQUEÇA a restrição e APENAS atenda o pedido atual retornando "search" normalmente.
+2. PEDIDO MÚLTIPLO: Se o usuário pedir VÁRIOS materiais na mesma mensagem (ex: "quero o contralto e a partitura da música X, e também a letra do hino Y"), crie uma ação "search" SEPARADA para CADA item solicitado e inclua todas elas no array "intents". Nunca junte nomes de músicas num só "search".
 3. CONTEXTO (MEMÓRIA): Você agora possui acesso ao histórico das últimas mensagens do usuário. Isso significa que se na mensagem passada o usuário perguntou "Tem a música Alfa e Ômega?", e agora ele mandar na nova mensagem "Sim, quero a de Tenor", VOCÊ DEVE cruzar as informações e montar um JSON de "search" com song_name: "Alfa e Ômega", file_type: "audio" e voice_part: "tenor". Nunca esqueça do contexto passado para completar a ação de buscar.
 4. FALTA DE MÚSICA (Coral): Se a category for "coral" e ele pedir material mas NÃO Disser o nome da música e nem estiver claro pelo histórico de mensagens. Use action: "chat" e peça a música.
 5. FALTA DE VOZ EXIGIDA (APENAS PARA ÁUDIOS DE CORAL): Se ele quiser o áudio/kit (category: "coral") e não especificar SOPRANO, CONTRALTO, TENOR ou BAIXO, use "chat" e pergunte qual é a voz dele! Mas ATENÇÃO: se pelo histórico ele responder a voz de uma música já dita antes, monte a intenção "search" casando esses dados.  
@@ -70,27 +70,27 @@ REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 8. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas, números de hinos e tipo de lição ("Jovens" ou "Adultos"). Converta para Title Case. ATENÇÃO: Nomes de músicas podem parecer frases normais (ex: "eu verei"). Seja perspicaz!
 9. MENU INICIAL: Se o usuário responder com as opções do menu (ex: "1", "3", "kits de voz", "link", "localização"), aja de acordo com o contexto. ATENÇÃO: Se ele digitar APENAS um número de 1 a 6 logo após a mensagem de boas vindas, assuma que ele escolheu uma das opções do menu e use action "chat" perguntando detalhes (ex: "Qual música deseja a partitura?"). Porém, se ele estiver no meio de uma conversa escolhendo o volume de um livro, o número do hino, ou em outro contexto, interprete o número de acordo com aquele assunto em andamento, NÃO confunda com o menu inicial!
 
-Exemplos de interação:
+Exemplos de interação (lembre-se que o retorno final é SEMPRE um objeto com o array "intents"):
 
 Usuário: "Me mande a letra da música Ainda Há Tempo"
-Resposta: {"action": "search", "category": "coral", "song_name": "Ainda Há Tempo", "file_type": "txt", "voice_part": null}
+Resposta: { "intents": [ {"action": "search", "category": "coral", "song_name": "Ainda Há Tempo", "file_type": "txt", "voice_part": null} ] }
 
-Usuário: "Queria a pista contralto de Ainda Há Tempo"
-Resposta: {"action": "search", "category": "coral", "song_name": "Ainda Há Tempo", "file_type": "audio", "voice_part": "contralto"}
-
-Usuário: "Kit contralto eu verei"
-Resposta: {"action": "search", "category": "coral", "song_name": "Eu Verei", "file_type": "audio", "voice_part": "contralto"}
+Usuário: "Queria a pista contralto de Ainda Há Tempo e a letra do hino 450"
+Resposta: { "intents": [ 
+  {"action": "search", "category": "coral", "song_name": "Ainda Há Tempo", "file_type": "audio", "voice_part": "contralto"},
+  {"action": "search", "category": "hinario", "song_name": "450", "file_type": "txt", "voice_part": null}
+] }
 
 Usuário: "Por favor, eu quero O Desejado de Todas as Nações."
-Resposta: {"action": "search", "category": "egw", "song_name": "O Desejado De Todas As Nações", "file_type": "pdf", "voice_part": null}
-
-Usuário: "Você tem o hino 404?"
-Resposta (Imediata, hinos não têm naipe): {"action": "search", "category": "hinario", "song_name": "404", "file_type": "txt", "voice_part": null}
+Resposta: { "intents": [ {"action": "search", "category": "egw", "song_name": "O Desejado De Todas As Nações", "file_type": "pdf", "voice_part": null} ] }
 
 --- Exemplo com base em histórico ---
 *(Contexto Oculto)* User: Tem o kit da música Alfa e Ômega? / Bot: Tenho sim, quer pra qual voz?
-Usuário vindo do Histórico digita: "Baixo!"
-Resposta a ser gerada deduzindo do contexto: {"action": "search", "category": "coral", "song_name": "Alfa e Ômega", "file_type": "audio", "voice_part": "baixo"}
+Usuário vindo do Histórico digita: "Baixo e Tenor!"
+Resposta a ser gerada deduzindo do contexto: { "intents": [
+  {"action": "search", "category": "coral", "song_name": "Alfa e Ômega", "file_type": "audio", "voice_part": "baixo"},
+  {"action": "search", "category": "coral", "song_name": "Alfa e Ômega", "file_type": "audio", "voice_part": "tenor"}
+] }
 `;
 
 export async function parseIntent(message, history = [], sender_name = "Membro do Coral") {
@@ -112,18 +112,28 @@ export async function parseIntent(message, history = [], sender_name = "Membro d
     });
 
     const rawResponse = completion.choices[0].message.content;
-    const intent = JSON.parse(rawResponse);
+    const jsonResponse = JSON.parse(rawResponse);
+    let intents = jsonResponse.intents;
+    
+    // Fallback caso a IA não retorne no array corretamente
+    if (!Array.isArray(intents)) {
+      if (jsonResponse.action) {
+        intents = [jsonResponse];
+      } else {
+        intents = [{ action: 'chat', chat_response: "Não entendi sua solicitação.", category: null, song_name: null, file_type: null, voice_part: null, raw_message: message }];
+      }
+    }
 
-    return {
+    return intents.map(intent => ({
       ...intent,
       category: intent.category || 'coral',
       raw_message: message,
       confidence: intent.song_name || intent.file_type || intent.voice_part ? 0.9 : 0.1,
       ambiguous: !(intent.song_name || intent.file_type || intent.voice_part),
       alternatives: []
-    };
+    }));
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
-    return { action: 'chat', chat_response: "Ocorreu um erro ao processar o seu pedido.", category: null, song_name: null, file_type: null, voice_part: null, raw_message: message, error: error.message };
+    return [{ action: 'chat', chat_response: "Ocorreu um erro ao processar o seu pedido.", category: null, song_name: null, file_type: null, voice_part: null, raw_message: message, error: error.message }];
   }
 }

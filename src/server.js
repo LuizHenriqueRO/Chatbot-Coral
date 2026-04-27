@@ -66,50 +66,52 @@ app.post('/webhook', async (req, res) => {
                 const history = await getHistory(sender_phone);
                 
                 // Processamento com IA para todas as mensagens repassando contexto e nome
-                const intent = await parseIntent(userText, history, sender_name);
-                console.log('Intent parsed:', JSON.stringify(intent, null, 2));
-
-                let driveResult = null;
-                if (intent.action === 'search') {
-                  driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part, intent.category);
-                  console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
-
-                  if (driveResult.found) {
-                    try {
-                      console.log('Receiving file from Google Drive to local buffer...');
-                      const buffer = await downloadFileBuffer(driveResult.file_id);
-                      console.log('Pushing file stream to Meta Media API...');
-
-                      let safe_filename = driveResult.file_name;
-                      if (intent.file_type === 'pdf' && !safe_filename.toLowerCase().endsWith('.pdf')) safe_filename += '.pdf';
-                      if (intent.file_type === 'txt' && !safe_filename.toLowerCase().endsWith('.txt')) safe_filename += '.txt';
-
-                      if (intent.file_type === 'txt') {
-                        console.log('Transcrevendo arquivo txt para texto...');
-                        driveResult.text_content = Buffer.from(buffer).toString('utf-8');
-                      } else {
-                        const media_id = await uploadMediaToWhatsApp(buffer, driveResult.mime_type, safe_filename);
-                        console.log('Media mapped successfully via Meta API. media_id:', media_id);
-                        driveResult.media_id = media_id;
-                      }
-                    } catch (uploadError) {
-                      console.error('Error migrating media to Meta Servers:', uploadError);
-                      driveResult.found = false;
-                      driveResult.error_message = 'Encontrei o arquivo, mas ocorreu um erro de conexão ao tentar prepará-lo para envio no WhatsApp.';
-                    }
-                  }
-                }
+                const intents = await parseIntent(userText, history, sender_name);
+                console.log('Intents parsed:', JSON.stringify(intents, null, 2));
 
                 // Salvar a pergunta do usuário no final que já foi deduzida e processada
                 await addMessageToHistory(sender_phone, 'user', userText);
 
-                const response = buildResponse(intent, driveResult, sender_phone);
-                console.log('Response built:', JSON.stringify(response, null, 2));
-                
-                // Salvar resposta do bot
-                await addMessageToHistory(sender_phone, 'assistant', response.message_text);
+                for (const intent of intents) {
+                  let driveResult = null;
+                  if (intent.action === 'search') {
+                    driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part, intent.category);
+                    console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
 
-                await sendWhatsAppMessage(response.api_payload);
+                    if (driveResult.found) {
+                      try {
+                        console.log('Receiving file from Google Drive to local buffer...');
+                        const buffer = await downloadFileBuffer(driveResult.file_id);
+                        console.log('Pushing file stream to Meta Media API...');
+
+                        let safe_filename = driveResult.file_name;
+                        if (intent.file_type === 'pdf' && !safe_filename.toLowerCase().endsWith('.pdf')) safe_filename += '.pdf';
+                        if (intent.file_type === 'txt' && !safe_filename.toLowerCase().endsWith('.txt')) safe_filename += '.txt';
+
+                        if (intent.file_type === 'txt') {
+                          console.log('Transcrevendo arquivo txt para texto...');
+                          driveResult.text_content = Buffer.from(buffer).toString('utf-8');
+                        } else {
+                          const media_id = await uploadMediaToWhatsApp(buffer, driveResult.mime_type, safe_filename);
+                          console.log('Media mapped successfully via Meta API. media_id:', media_id);
+                          driveResult.media_id = media_id;
+                        }
+                      } catch (uploadError) {
+                        console.error('Error migrating media to Meta Servers:', uploadError);
+                        driveResult.found = false;
+                        driveResult.error_message = 'Encontrei o arquivo, mas ocorreu um erro de conexão ao tentar prepará-lo para envio no WhatsApp.';
+                      }
+                    }
+                  }
+
+                  const response = buildResponse(intent, driveResult, sender_phone);
+                  console.log('Response built:', JSON.stringify(response, null, 2));
+                  
+                  // Salvar resposta do bot
+                  await addMessageToHistory(sender_phone, 'assistant', response.message_text);
+
+                  await sendWhatsAppMessage(response.api_payload);
+                }
               } catch (error) {
                 console.error("Erro ao processar a mensagem:", error);
               }
