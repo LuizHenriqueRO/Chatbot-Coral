@@ -13,13 +13,25 @@ export function buildResponse(intent, driveResult, recipient_phone) {
     if (message_text.includes('👋 Sou o assistente do Coral Jovem da Asa Norte')) {
       api_payload.type = 'interactive';
       api_payload.interactive = {
-        type: 'button',
+        type: 'list',
         body: { text: message_text },
         action: {
-          buttons: [
-            { type: 'reply', reply: { id: 'btn_agenda', title: 'AGENDA DO CORAL' } },
-            { type: 'reply', reply: { id: 'btn_links', title: 'LINK DOS KITS' } },
-            { type: 'reply', reply: { id: 'btn_loc', title: 'LOCALIZAÇÃO' } }
+          button: 'Ver Opções',
+          sections: [
+            {
+              title: 'O que você deseja?',
+              rows: [
+                { id: 'btn_kits', title: 'Kits de Voz' },
+                { id: 'btn_partituras', title: 'Partituras' },
+                { id: 'btn_letras', title: 'Letras das Músicas' },
+                { id: 'btn_hinos', title: 'Hinos do Hinário' },
+                { id: 'btn_egw', title: 'Livros de Ellen White' },
+                { id: 'btn_licao', title: 'Lição Escola Sabatina' },
+                { id: 'btn_agenda', title: 'Agenda do Coral' },
+                { id: 'btn_links', title: 'Link dos Kits' },
+                { id: 'btn_loc', title: 'Localização da Igreja' }
+              ]
+            }
           ]
         }
       };
