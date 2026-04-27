@@ -24,6 +24,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
                 { id: 'btn_kits', title: 'Kits de Voz' },
                 { id: 'btn_partituras', title: 'Partituras' },
                 { id: 'btn_letras', title: 'Letras das Músicas' },
+                { id: 'btn_louvor', title: 'Letras de Louvor' },
                 { id: 'btn_hinos', title: 'Hinos do Hinário' },
                 { id: 'btn_egw', title: 'Livros de Ellen White' },
                 { id: 'btn_licao', title: 'Lição Escola Sabatina' },
