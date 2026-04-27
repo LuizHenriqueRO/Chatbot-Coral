@@ -102,6 +102,12 @@ Resposta a ser gerada deduzindo do contexto: { "intents": [
 Usuário digita: "Ainda há tempo"
 Resposta obrigatória (pois a voz não foi informada e o pedido não foi no plural):
 { "intents": [ {"action": "chat", "chat_response": "Qual é o seu naipe (Soprano, Contralto, Tenor, Baixo ou Todos)?", "category": "coral", "song_name": "Ainda Há Tempo", "file_type": "audio", "voice_part": null} ] }
+
+--- Exemplo de Fluxo EGW Volume ---
+*(Contexto)* User: Livros de Ellen White / Bot: Qual livro você deseja?
+Usuário digita: "Mente, Caráter e Personalidade"
+Resposta obrigatória (pois é um livro listado que possui volumes e o número NÃO foi dito):
+{ "intents": [ {"action": "chat", "chat_response": "Qual volume você deseja?", "category": "egw", "song_name": "Mente, Caráter e Personalidade", "file_type": "pdf", "voice_part": null} ] }
 `;
 
 export async function parseIntent(message, history = [], sender_name = "Membro do Coral") {
