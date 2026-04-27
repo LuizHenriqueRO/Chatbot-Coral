@@ -141,14 +141,30 @@ export async function parseIntent(message, history = [], sender_name = "Membro d
       }
     }
 
-    return intents.map(intent => ({
-      ...intent,
-      category: intent.category || 'coral',
-      raw_message: message,
-      confidence: intent.song_name || intent.file_type || intent.voice_part ? 0.9 : 0.1,
-      ambiguous: !(intent.song_name || intent.file_type || intent.voice_part),
-      alternatives: []
-    }));
+    return intents.map(intent => {
+      // Salvaguarda Programática para Livros EGW com Múltiplos Volumes
+      if (intent.category === 'egw' && intent.action === 'search' && intent.song_name) {
+        const lowerName = intent.song_name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // remove acentos
+        const multiVolumeBooks = ['testemunhos para a igreja', 'mente carater e personalidade', 'mensagens escolhidas', 'espirito de profecia'];
+        
+        const isMultiVolume = multiVolumeBooks.some(book => lowerName.includes(book));
+        const hasNumber = /\d/.test(lowerName) || /\b(um|dois|tres|quatro|cinco|seis|sete|oito|nove)\b/.test(lowerName);
+        
+        if (isMultiVolume && !hasNumber) {
+          intent.action = 'chat';
+          intent.chat_response = 'Qual volume você deseja?';
+        }
+      }
+
+      return {
+        ...intent,
+        category: intent.category || 'coral',
+        raw_message: message,
+        confidence: intent.song_name || intent.file_type || intent.voice_part ? 0.9 : 0.1,
+        ambiguous: !(intent.song_name || intent.file_type || intent.voice_part),
+        alternatives: []
+      };
+    });
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
     return [{ action: 'chat', chat_response: "Ocorreu um erro ao processar o seu pedido.", category: null, song_name: null, file_type: null, voice_part: null, raw_message: message, error: error.message }];
