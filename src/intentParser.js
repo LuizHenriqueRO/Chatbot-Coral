@@ -57,9 +57,10 @@ REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 2. PEDIDO MÚLTIPLO: Se o usuário pedir VÁRIOS materiais na mesma mensagem (ex: "quero o contralto e a partitura da música X, e também a letra do hino Y"), crie uma ação "search" SEPARADA para CADA item solicitado e inclua todas elas no array "intents". Nunca junte nomes de músicas num só "search".
 3. CONTEXTO (MEMÓRIA): Você agora possui acesso ao histórico das últimas mensagens do usuário. Isso significa que se na mensagem passada o usuário perguntou "Tem a música Alfa e Ômega?", e agora ele mandar na nova mensagem "Sim, quero a de Tenor", VOCÊ DEVE cruzar as informações e montar um JSON de "search" com song_name: "Alfa e Ômega", file_type: "audio" e voice_part: "tenor". Nunca esqueça do contexto passado para completar a ação de buscar.
 5. FALTA DE VOZ EXIGIDA (APENAS PARA ÁUDIOS DE CORAL): Se o usuário pedir o áudio/kit e NÃO especificar a voz (soprano, contralto, tenor, baixo):
-   - Se ele pedir no PLURAL ou de forma abrangente (ex: "os kits", "todos os kits", "mande os áudios"), crie 4 intenções de "search" separadas no array "intents" para a mesma música, uma para CADA voz (soprano, contralto, tenor e baixo).
-   - Se ele pedir no SINGULAR (ex: "o kit", "a pista", "o áudio") e não estiver claro pelo histórico, use action "chat" e pergunte qual é a voz dele! 
-   - ATENÇÃO: se pelo histórico ele já tiver respondido a voz em mensagens anteriores, você pode usar a mesma voz deduzida se ele pedir no singular.
+   - REGRA ESTRITA DE PLURALIDADE: Preste MUITA atenção se o pedido foi no plural ("os kits", "todos os áudios") ou no singular ("o kit", "o áudio", "a pista").
+   - Se for PLURAL: crie 4 intenções de "search" separadas no array "intents" para a mesma música, uma para CADA voz (soprano, contralto, tenor e baixo).
+   - Se for SINGULAR: VOCÊ É PROIBIDO de retornar as 4 vozes. Se o histórico NÃO deixar claro a voz dele, retorne apenas uma intenção com action "chat" e pergunte qual é a voz dele (ex: "Para qual naipe você quer o kit?").
+   - ATENÇÃO: se pelo histórico ele já tiver respondido a voz em mensagens anteriores, você pode deduzir e usar a mesma voz se ele pedir no singular.
 6. FALTA DE VOLUME (Livros EGW): Se ele pedir os livros que possuem volumes, pergunte via "chat" qual é o volume caso não esteja claro.
 7. FALTA DE LIÇÃO (Escola Sabatina): Se ele pedir a lição e não disser se é Jovens ou Adultos, use "chat" e pergunte.
 8. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas, números de hinos e tipo de lição ("Jovens" ou "Adultos"). Converta para Title Case. ATENÇÃO: Nomes de músicas podem parecer frases normais (ex: "eu verei"). Seja perspicaz!
