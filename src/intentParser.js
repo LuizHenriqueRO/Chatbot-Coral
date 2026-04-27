@@ -60,7 +60,12 @@ REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
    - REGRA 1 (Lote/Plural): SE E SOMENTE SE a mensagem atual do usuário usar PLURAL explícito ou a palavra "todos" (ex: "os kits", "mande todos", "todas as vozes"), retorne 4 intenções de "search" separadas (uma para cada voz).
    - REGRA 2 (Singular/Nome da Música): Se o pedido for SINGULAR ("o kit") ou se o usuário enviar APENAS O NOME DA MÚSICA (ex: "Ainda há tempo", "Eu verei"), VOCÊ É ESTRITAMENTE PROIBIDO de buscar as 4 vozes! Você deve retornar UMA ÚNICA intenção com action "chat" perguntando: "Qual é o seu naipe (Soprano, Contralto, Tenor, Baixo ou Todos)?"
    - ATENÇÃO: se pelo histórico ele já tiver respondido a voz em mensagens anteriores, você deve usar essa voz deduzida.
-6. FALTA DE VOLUME (Livros EGW): ATENÇÃO! Alguns livros possuem vários volumes (ex: "Testemunhos para a Igreja", "Mente, Caráter e Personalidade", "Mensagens Escolhidas", "O Espírito de Profecia"). Se o usuário pedir um desses livros e NÃO especificar o número do volume na mensagem, VOCÊ É PROIBIDO de buscar! Retorne "chat" e pergunte: "Qual volume você deseja?"
+6. FALTA DE VOLUME (Livros EGW): ATENÇÃO! Alguns livros de Ellen White possuem múltiplos volumes. São eles:
+   - "Mensagens Escolhidas" (volumes 1 ao 3)
+   - "Mente, Caráter e Personalidade" (volumes 1 ao 2)
+   - "Testemunhos para a Igreja" (volumes 1 ao 9)
+   - "Testemunhos Seletos" (volumes 1 ao 3)
+   Se o usuário pedir um desses livros e NÃO especificar o número do volume na mensagem atual ou no histórico, VOCÊ É PROIBIDO de buscar! Retorne action "chat" e pergunte: "Qual volume você deseja?"
 7. FALTA DE LIÇÃO (Escola Sabatina): Se ele pedir a lição e não disser se é Jovens ou Adultos, use "chat" e pergunte.
 8. EXTRAÇÃO: song_name abriga títulos de livros, nomes de músicas, números de hinos e tipo de lição ("Jovens" ou "Adultos"). Converta para Title Case. ATENÇÃO: Nomes de músicas podem parecer frases normais (ex: "eu verei"). Seja perspicaz!
 9. MENU INTERATIVO: Se o usuário enviar exatamente o título de uma das opções do menu interativo (ex: "Kit de Voz", "Partituras", "Letras das Músicas", "Letras de Louvor", "Hinos do Hinário", "Livros de Ellen White", "Lição Escola Sabatina"), use action "chat" perguntando detalhes específicos.
@@ -141,30 +146,14 @@ export async function parseIntent(message, history = [], sender_name = "Membro d
       }
     }
 
-    return intents.map(intent => {
-      // Salvaguarda Programática para Livros EGW com Múltiplos Volumes
-      if (intent.category === 'egw' && intent.action === 'search' && intent.song_name) {
-        const lowerName = intent.song_name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // remove acentos
-        const multiVolumeBooks = ['testemunhos para a igreja', 'mente carater e personalidade', 'mensagens escolhidas', 'espirito de profecia'];
-        
-        const isMultiVolume = multiVolumeBooks.some(book => lowerName.includes(book));
-        const hasNumber = /\d/.test(lowerName) || /\b(um|dois|tres|quatro|cinco|seis|sete|oito|nove)\b/.test(lowerName);
-        
-        if (isMultiVolume && !hasNumber) {
-          intent.action = 'chat';
-          intent.chat_response = 'Qual volume você deseja?';
-        }
-      }
-
-      return {
-        ...intent,
-        category: intent.category || 'coral',
-        raw_message: message,
-        confidence: intent.song_name || intent.file_type || intent.voice_part ? 0.9 : 0.1,
-        ambiguous: !(intent.song_name || intent.file_type || intent.voice_part),
-        alternatives: []
-      };
-    });
+    return intents.map(intent => ({
+      ...intent,
+      category: intent.category || 'coral',
+      raw_message: message,
+      confidence: intent.song_name || intent.file_type || intent.voice_part ? 0.9 : 0.1,
+      ambiguous: !(intent.song_name || intent.file_type || intent.voice_part),
+      alternatives: []
+    }));
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
     return [{ action: 'chat', chat_response: "Ocorreu um erro ao processar o seu pedido.", category: null, song_name: null, file_type: null, voice_part: null, raw_message: message, error: error.message }];
