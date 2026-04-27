@@ -9,8 +9,24 @@ export function buildResponse(intent, driveResult, recipient_phone) {
 
   if (intent.action === 'chat') {
     message_text = intent.chat_response || 'Olá! Como posso ajudar?';
-    api_payload.type = 'text';
-    api_payload.text = { body: message_text };
+    
+    if (message_text.includes('Olá! 👋 Sou o assistente do Coral Jovem da Asa Norte')) {
+      api_payload.type = 'interactive';
+      api_payload.interactive = {
+        type: 'button',
+        body: { text: message_text },
+        action: {
+          buttons: [
+            { type: 'reply', reply: { id: 'btn_agenda', title: 'AGENDA DO CORAL' } },
+            { type: 'reply', reply: { id: 'btn_links', title: 'LINK DOS KITS' } },
+            { type: 'reply', reply: { id: 'btn_loc', title: 'LOCALIZAÇÃO' } }
+          ]
+        }
+      };
+    } else {
+      api_payload.type = 'text';
+      api_payload.text = { body: message_text };
+    }
   } else if (intent.action === 'info') {
     if (intent.info_type === 'agenda') {
       message_text = `🗓️ *Agenda do Coral* 📍 \n\n*Agenda do Coral:* (1° semestre)\n09/05 - sábado 19h - quadras da Asa Norte (serenata das mães)\n31/05 - domingo 19h - IASD Asa Norte\n13/06 - sábado 9h - IASD Asa Norte\n27/06 - sábado 18h - Vigília`;

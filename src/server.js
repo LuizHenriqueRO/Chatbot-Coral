@@ -42,13 +42,26 @@ app.post('/webhook', async (req, res) => {
             const message = change.value.messages[0];
             const sender_phone = change.value.contacts[0].wa_id;
 
-            if (message && message.type === 'text') {
+            if (message && (message.type === 'text' || message.type === 'interactive')) {
               try {
+                let userText = '';
+                if (message.type === 'text') {
+                  userText = message.text.body;
+                } else if (message.type === 'interactive') {
+                  if (message.interactive.type === 'button_reply') {
+                    userText = message.interactive.button_reply.title;
+                  } else if (message.interactive.type === 'list_reply') {
+                    userText = message.interactive.list_reply.title;
+                  }
+                }
+
+                if (!userText) continue;
+
                 // Recuperar do histórico da IA
                 const history = await getHistory(sender_phone);
                 
                 // Processamento com IA para todas as mensagens repassando contexto
-                const intent = await parseIntent(message.text.body, history);
+                const intent = await parseIntent(userText, history);
                 console.log('Intent parsed:', JSON.stringify(intent, null, 2));
 
                 let driveResult = null;
@@ -83,7 +96,7 @@ app.post('/webhook', async (req, res) => {
                 }
 
                 // Salvar a pergunta do usuário no final que já foi deduzida e processada
-                await addMessageToHistory(sender_phone, 'user', message.text.body);
+                await addMessageToHistory(sender_phone, 'user', userText);
 
                 const response = buildResponse(intent, driveResult, sender_phone);
                 console.log('Response built:', JSON.stringify(response, null, 2));
