@@ -21,7 +21,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
             {
               title: 'O que você deseja?',
               rows: [
-                { id: 'btn_kits', title: 'Kits de Voz' },
+                { id: 'btn_kits', title: 'Kit de Voz' },
                 { id: 'btn_partituras', title: 'Partituras' },
                 { id: 'btn_letras', title: 'Letras das Músicas' },
                 { id: 'btn_louvor', title: 'Letras de Louvor' },
