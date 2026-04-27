@@ -42,6 +42,11 @@ app.post('/webhook', async (req, res) => {
             const message = change.value.messages[0];
             const sender_phone = change.value.contacts[0].wa_id;
 
+            let sender_name = 'Membro do Coral';
+            if (change.value.contacts && change.value.contacts[0].profile && change.value.contacts[0].profile.name) {
+              sender_name = change.value.contacts[0].profile.name;
+            }
+
             if (message && (message.type === 'text' || message.type === 'interactive')) {
               try {
                 let userText = '';
@@ -60,8 +65,8 @@ app.post('/webhook', async (req, res) => {
                 // Recuperar do histórico da IA
                 const history = await getHistory(sender_phone);
                 
-                // Processamento com IA para todas as mensagens repassando contexto
-                const intent = await parseIntent(userText, history);
+                // Processamento com IA para todas as mensagens repassando contexto e nome
+                const intent = await parseIntent(userText, history, sender_name);
                 console.log('Intent parsed:', JSON.stringify(intent, null, 2));
 
                 let driveResult = null;

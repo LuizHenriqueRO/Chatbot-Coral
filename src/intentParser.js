@@ -7,7 +7,7 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
-const INTENT_SYSTEM_PROMPT = `
+const INTENT_SYSTEM_PROMPT_TEMPLATE = (userName) => `
 Você é o assistente virtual amigável do Coral Jovem da Asa Norte. Sua função é conversar de forma fluida com os membros do coral e ajudá-los a encontrar materiais e informações (áudios, partituras, letras, livros, etc).
 
 Sua resposta DEVE ser ESTRITAMENTE um único objeto JSON válido, sem nenhum texto Markdown ou formatação fora do JSON.
@@ -17,7 +17,7 @@ Existem três cenários de intenção. Você deve escolher a "action" correta:
 CENÁRIO 1: Bate-papo (action: "chat")
 Se o usuário estiver apenas cumprimentando, agradecendo, puxando assunto ou fazendo uma pergunta geral (ex: "oi", "bom dia", "obrigado", "como funciona?").
 AJA NATURALMENTE. Se o usuário mandar QUALQUER TIPO de saudação inicial ou primeira interação (ex: "oi", "olá", "bom dia", "boa tarde", "boa noite", "e aí", "tudo bem?", "opa", ou só puxando assunto para começar a conversa), VOCÊ É OBRIGADO A RETORNAR EXATAMENTE o seguinte texto (sem aspas, preservando as quebras de linha com \n):
-Olá! 👋 Sou o assistente do Coral Jovem da Asa Norte. Posso te ajudar com kits de voz, partituras, letras das músicas, agenda e link dos kits. Além disso, também posso te fornecer as letras dos hinos do Hinário Adventista, livros de Ellen White, lição da semana de jovens e adultos e a localização da Igreja Adventista da Asa Norte.
+Olá, ${userName}! 👋 Sou o assistente do Coral Jovem da Asa Norte. Posso te ajudar com kits de voz, partituras, letras das músicas, agenda e link dos kits. Além disso, também posso te fornecer as letras dos hinos do Hinário Adventista, livros de Ellen White, lição da semana de jovens e adultos e a localização da Igreja Adventista da Asa Norte.
 O que você deseja hoje?
 
 1 - KITS DE VOZ
@@ -93,7 +93,7 @@ Usuário vindo do Histórico digita: "Baixo!"
 Resposta a ser gerada deduzindo do contexto: {"action": "search", "category": "coral", "song_name": "Alfa e Ômega", "file_type": "audio", "voice_part": "baixo"}
 `;
 
-export async function parseIntent(message, history = []) {
+export async function parseIntent(message, history = [], sender_name = "Membro do Coral") {
   if (!OPENAI_API_KEY) {
     console.error('OPENAI_API_KEY is not set.');
     return { song_name: null, file_type: null, voice_part: null, raw_message: message, error: 'OPENAI_API_KEY not set' };
@@ -103,7 +103,7 @@ export async function parseIntent(message, history = []) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini", // Modelo reconfigurado para a nova arquitetura de alta performance e baixo custo
       messages: [
-        { role: "system", content: INTENT_SYSTEM_PROMPT },
+        { role: "system", content: INTENT_SYSTEM_PROMPT_TEMPLATE(sender_name) },
         ...history,
         { role: "user", content: message }
       ],

@@ -10,7 +10,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
   if (intent.action === 'chat') {
     message_text = intent.chat_response || 'Olá! Como posso ajudar?';
     
-    if (message_text.includes('Olá! 👋 Sou o assistente do Coral Jovem da Asa Norte')) {
+    if (message_text.includes('👋 Sou o assistente do Coral Jovem da Asa Norte')) {
       api_payload.type = 'interactive';
       api_payload.interactive = {
         type: 'button',
