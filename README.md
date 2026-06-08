@@ -25,11 +25,13 @@ Este chatbot funciona como um bibliotecário e assistente amigável, alimentado 
 <div align="center">
   <table>
     <tr>
-      <td align="center"><b>Menu Inicial / Saudação</b></td>
+      <td align="center"><b>Saudação</b></td>
+      <td align="center"><b>Menu Inicial</b></td>
       <td align="center"><b>Pedindo um Kit de Voz</b></td>
       <td align="center"><b>Buscando um Livro</b></td>
     </tr>
     <tr>
+      <td><img src="https://github.com/user-attachments/assets/02c0fef3-64f3-4810-b35f-a4a0fecc69b7" width="250" alt="Menu Inicial"></td>
       <td><img src="https://via.placeholder.com/250x450.png?text=Print+do+Menu" width="250" alt="Menu Inicial"></td>
       <td><img src="https://via.placeholder.com/250x450.png?text=Print+Kit+de+Voz" width="250" alt="Kit de Voz"></td>
       <td><img src="https://via.placeholder.com/250x450.png?text=Print+Livros" width="250" alt="Busca de Livro"></td>
