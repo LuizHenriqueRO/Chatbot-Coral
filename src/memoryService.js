@@ -3,11 +3,11 @@ import { createClient } from 'redis';
 const REDIS_URL = process.env.REDIS_URL;
 let redisClient = null;
 
-// Fallback memory configuration
+// Fallback
 const fallbackMemory = new Map();
-const EXPIRATION_TIME_MS = 2 * 60 * 60 * 1000; // 2 horas em milissegundos
-const EXPIRATION_TIME_SECONDS = 2 * 60 * 60; // 2 horas em segundos
-const MAX_HISTORY_LENGTH = 12; // Mantém as últimas 12 interações
+const EXPIRATION_TIME_MS = 2 * 60 * 60 * 1000;
+const EXPIRATION_TIME_SECONDS = 2 * 60 * 60;
+const MAX_HISTORY_LENGTH = 12;
 
 if (REDIS_URL) {
   redisClient = createClient({ url: REDIS_URL });
@@ -24,11 +24,6 @@ if (REDIS_URL) {
   console.log('REDIS_URL not found. Using in-memory fallback for Session Memory.');
 }
 
-/**
- * Recupera o histórico do usuário no Redis ou na Memória Local
- * @param {string} wa_id 
- * @returns {Promise<Array>}
- */
 export async function getHistory(wa_id) {
   const key = `history:${wa_id}`;
   
@@ -44,11 +39,10 @@ export async function getHistory(wa_id) {
       return [];
     }
   } else {
-    // Fallback: Memória RAM
+    // Memória RAM
     const session = fallbackMemory.get(key);
     if (!session) return [];
     
-    // Checa expiração do Fallback (2 horas)
     if (Date.now() - session.timestamp > EXPIRATION_TIME_MS) {
       fallbackMemory.delete(key);
       return [];
@@ -57,12 +51,6 @@ export async function getHistory(wa_id) {
   }
 }
 
-/**
- * Adiciona uma mensagem ao histórico limitando a quantidade máxima
- * @param {string} wa_id 
- * @param {string} role 'user' | 'assistant'
- * @param {string} content 
- */
 export async function addMessageToHistory(wa_id, role, content) {
   if (!content) return;
   const key = `history:${wa_id}`;
@@ -71,7 +59,6 @@ export async function addMessageToHistory(wa_id, role, content) {
   let currentHistory = await getHistory(wa_id);
   currentHistory.push(newMessage);
   
-  // Limita o tamanho do array de histórico
   if (currentHistory.length > MAX_HISTORY_LENGTH) {
     currentHistory = currentHistory.slice(currentHistory.length - MAX_HISTORY_LENGTH);
   }

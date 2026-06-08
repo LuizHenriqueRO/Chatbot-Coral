@@ -20,7 +20,6 @@ function initGoogleDrive() {
     return;
   }
 
-  // Inicializa a IA na Nuvem
   if (!openaiClient && OPENAI_API_KEY) {
     openaiClient = new OpenAI({ apiKey: OPENAI_API_KEY });
   }
@@ -170,7 +169,6 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       };
 
     } else {
-      // Logic for EGW and HINARIO: Direct files inside root without song subfolders
       let rootId = category === 'hinario' ? GOOGLE_DRIVE_HINARIO_FOLDER_ID : GOOGLE_DRIVE_EGW_FOLDER_ID;
       if (!rootId) {
         return { found: false, error_message: `A pasta raiz para a categoria '${category}' não foi configurada nas variáveis.` };
@@ -188,7 +186,6 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       }
 
       let files = rawFiles.filter(file => {
-        // PERMISSAO EXPLICITA DO HINARIO PRA TEXTOS COMO VOCE MENCIONOU:
         if (category === 'hinario' && (file.mimeType === 'text/plain' || file.name.endsWith('.txt'))) return true;
         if (category === 'egw' && (file.mimeType === 'application/pdf' || file.name.endsWith('.pdf'))) return true;
         
@@ -198,16 +195,11 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
         return true; 
       });
 
-      // Fallback inteligente caso a IA tente podar tudo ou caso vocẽ adicione novos tipos que a IA não previu
       if (files.length === 0) {
         files = rawFiles;
       }
 
-      // TRATAMENTO VIP DE LÓGICA HÍBRIDA EXCLUSIVA PARA O HINÁRIO!
       if (category === 'hinario') {
-         // ==========================================
-         // PASSO 1: CAMADA MATEMÁTICA (Match Perfeito)
-         // ==========================================
          let numToFind = null;
          if (!isNaN(song_name.trim())) {
              numToFind = parseInt(song_name.trim(), 10);
@@ -236,9 +228,6 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
             }
          }
 
-         // ==========================================
-         // PASSO 2: CAMADA FUZZY STRICT (Aproximação alta sem gastar IA)
-         // ==========================================
          const strictFuse = new Fuse(files, { keys: ['name'], threshold: 0.35, ignoreLocation: true, ignoreFieldNorm: true });
          const strictResults = strictFuse.search(song_name);
          if (strictResults.length > 0) {
@@ -253,9 +242,6 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
             };
          }
 
-         // ==========================================
-         // PASSO 3: CAMADA SEMÂNTICA CEREBRAL (Rede de Segurança Final)
-         // ==========================================
          if (openaiClient) {
            try {
              const promptContext = files.map(f => `${f.id}|${f.name}`).join('\n');
@@ -295,7 +281,6 @@ ${promptContext}
          return { found: false, error_message: `Não encontrei referências seguras de '${song_name}' no diretório do hinario.`, candidates: [] };
       }
 
-      // Se não for Hinário (ex: EGW), usamos o maravilhoso buscador cego "Fuse"
       const fuse = new Fuse(files, { 
          keys: ['name'], 
          threshold: 0.65, 

@@ -17,7 +17,6 @@ export async function uploadMediaToWhatsApp(buffer, mimeType, filename) {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-      // Não passar o content-type manualmente pois o node-fetch usa um boundary próprio quando enviamos multipart via FormData nativo
     },
     body: formData,
   });
@@ -28,5 +27,5 @@ export async function uploadMediaToWhatsApp(buffer, mimeType, filename) {
     throw new Error(`Failed to upload media to WhatsApp: ${JSON.stringify(data)}`);
   }
 
-  return data.id; // Retorna o Media ID que será usado pela payload do WHatsApp
+  return data.id;
 }

@@ -87,7 +87,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
           api_payload.text = { body: message_text };
         } else {
           file_label = 'a letra';
-          message_type = 'document'; // Meta API usa 'document' para txt e pdf
+          message_type = 'document';
           api_payload.type = 'document';
           let safe_txt_name = driveResult.file_name.toLowerCase().endsWith('.txt') ? driveResult.file_name : `${driveResult.file_name}.txt`;
           api_payload.document = { id: driveResult.media_id, caption: `${driveResult.file_name} 🎵`, filename: safe_txt_name };
@@ -102,7 +102,6 @@ export function buildResponse(intent, driveResult, recipient_phone) {
         }
       }
     } else {
-      // File not found
       if (driveResult && driveResult.candidates && driveResult.candidates.length > 0) {
         message_text = `Não encontrei '${intent.song_name}' no Drive. Você quis dizer '${driveResult.candidates[0]}'? Ou fale com o regente. 🎵`;
       } else if (driveResult && driveResult.error_message) {
@@ -114,20 +113,19 @@ export function buildResponse(intent, driveResult, recipient_phone) {
       api_payload.text = { body: message_text };
     }
   } else {
-    // Fallback if action is missing or unknown
     message_text = 'Desculpe, não consegui entender sua solicitação. Pode tentar novamente?';
     api_payload.type = 'text';
     api_payload.text = { body: message_text };
   }
 
-  // Enforce character limit
+  // Limite de caracteres
   if (api_payload.type === 'text') {
     if (message_text.length > 4000) {
       message_text = message_text.substring(0, 3997) + '...';
       api_payload.text.body = message_text;
     }
   } else {
-    // Caption limit for document/audio
+    // Limite da caption
     if (message_text.length > 300) {
       message_text = message_text.substring(0, 297) + '...';
       if (api_payload.document) api_payload.document.caption = message_text;

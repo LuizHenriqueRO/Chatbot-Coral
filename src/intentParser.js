@@ -123,21 +123,20 @@ export async function parseIntent(message, history = [], sender_name = "Membro d
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Modelo reconfigurado para a nova arquitetura de alta performance e baixo custo
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: INTENT_SYSTEM_PROMPT_TEMPLATE(sender_name) },
         ...history,
         { role: "user", content: message }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.1, // Manter baixo para respostas mais focadas
+      temperature: 0.1,
     });
 
     const rawResponse = completion.choices[0].message.content;
     const jsonResponse = JSON.parse(rawResponse);
     let intents = jsonResponse.intents;
     
-    // Fallback caso a IA não retorne no array corretamente
     if (!Array.isArray(intents)) {
       if (jsonResponse.action) {
         intents = [jsonResponse];
