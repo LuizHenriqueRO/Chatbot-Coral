@@ -32,9 +32,9 @@ Este chatbot funciona como um bibliotecário e assistente amigável, alimentado 
     </tr>
     <tr>
       <td><img src="https://github.com/user-attachments/assets/02c0fef3-64f3-4810-b35f-a4a0fecc69b7" width="250" alt="Menu Inicial"></td>
-      <td><img src="https://via.placeholder.com/250x450.png?text=Print+do+Menu" width="250" alt="Menu Inicial"></td>
-      <td><img src="https://via.placeholder.com/250x450.png?text=Print+Kit+de+Voz" width="250" alt="Kit de Voz"></td>
-      <td><img src="https://via.placeholder.com/250x450.png?text=Print+Livros" width="250" alt="Busca de Livro"></td>
+      <td><img src="https://github.com/user-attachments/assets/86dc0eb1-ec83-47df-ada7-c3e10cabf95b" width="250" alt="Menu Inicial"></td>
+      <td><img src="https://github.com/user-attachments/assets/d06036f5-8a67-4efe-a309-72e08ff4d3ec" width="250" alt="Kit de Voz"></td>
+      <td><img src="https://github.com/user-attachments/assets/84bab1a1-09e0-4504-8263-be62243a2a54" width="250" alt="Busca de Livro"></td>
     </tr>
   </table>
 </div>
