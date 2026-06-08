@@ -4,6 +4,9 @@
 
 Bem-vindo ao repositório do **Bot Coral Jovem da Asa Norte**! Este é um sistema autônomo projetado para revolucionar e facilitar a forma como os membros de um coral acessam materiais de ensaio e informações importantes da igreja. Tudo isso diretamente pela tela do WhatsApp, conversando em linguagem natural!
 
+> **📱 Fale com o Bot agora mesmo:**  
+> Salve o número **[(XX) XXXXX-XXXX]** nos seus contatos ou [clique aqui para abrir o WhatsApp](https://wa.me/55DDDNÚMERO) e mande um "Oi"!
+
 ## 🚀 O que este bot faz?
 
 Este chatbot funciona como um bibliotecário e assistente amigável, alimentado por IA. Ele compreende intenções complexas, lembra do contexto da conversa e busca os materiais desejados em um acervo do **Google Drive**, entregando-os perfeitamente na conversa via **WhatsApp Cloud API**.
