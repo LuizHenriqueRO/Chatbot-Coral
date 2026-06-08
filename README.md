@@ -1,6 +1,6 @@
 # 🎶 ChatBot Coral Jovem - Assistente Virtual Inteligente via WhatsApp
 
-![Banner ou Logo do Chatbot](https://via.placeholder.com/800x200.png?text=Bot+Coral+Jovem+-+Insira+seu+Banner+Aqui)
+<img width="2560" height="800" alt="Cópia de coral jovem asa norte (2048 x 1152 px)" src="https://github.com/user-attachments/assets/339521b8-775f-4c4c-92c6-04cd15d98312" />
 
 Bem-vindo ao repositório do **Bot Coral Jovem da Asa Norte**! Este é um sistema autônomo projetado para revolucionar e facilitar a forma como os membros de um coral acessam materiais de ensaio e informações importantes da igreja. Tudo isso diretamente pela tela do WhatsApp, conversando em linguagem natural!
 
