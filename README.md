@@ -1,4 +1,4 @@
-# 🎶 Bot Coral Jovem - Assistente Virtual Inteligente via WhatsApp
+# 🎶 ChatBot Coral Jovem - Assistente Virtual Inteligente via WhatsApp
 
 ![Banner ou Logo do Chatbot](https://via.placeholder.com/800x200.png?text=Bot+Coral+Jovem+-+Insira+seu+Banner+Aqui)
 
@@ -21,8 +21,6 @@ Este chatbot funciona como um bibliotecário e assistente amigável, alimentado 
 ---
 
 ## 📸 Demonstração do Chatbot
-
-*(Substitua as imagens abaixo por prints reais do seu chatbot em ação no WhatsApp)*
 
 <div align="center">
   <table>
