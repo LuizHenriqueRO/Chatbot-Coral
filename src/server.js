@@ -115,6 +115,13 @@ app.post('/webhook', async (req, res) => {
                     }
                   }
 
+                  const response = buildResponse(intent, driveResult, sender_phone);
+                  console.log('Response built:', JSON.stringify(response, null, 2));
+                  
+                  await addMessageToHistory(sender_phone, 'assistant', response.message_text);
+
+                  await sendWhatsAppMessage(response.api_payload);
+
                   if (intent.action === 'info' && intent.info_type === 'paleta') {
                     try {
                       console.log('Buscando imagens da paleta...');
@@ -133,13 +140,6 @@ app.post('/webhook', async (req, res) => {
                       console.error('Erro ao buscar e enviar imagens da paleta:', err);
                     }
                   }
-
-                  const response = buildResponse(intent, driveResult, sender_phone);
-                  console.log('Response built:', JSON.stringify(response, null, 2));
-                  
-                  await addMessageToHistory(sender_phone, 'assistant', response.message_text);
-
-                  await sendWhatsAppMessage(response.api_payload);
                 }
               } catch (error) {
                 console.error("Erro ao processar a mensagem:", error);
