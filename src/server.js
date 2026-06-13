@@ -1,7 +1,7 @@
 import express from 'express';
 import { google } from 'googleapis';
 import { parseIntent } from './intentParser.js';
-import { searchDrive, downloadFileBuffer } from './googleDriveService.js';
+import { searchDrive, downloadFileBuffer, getPaletteImagesFromDrive } from './googleDriveService.js';
 import { buildResponse } from './responseBuilder.js';
 import { uploadMediaToWhatsApp } from './whatsappMediaService.js';
 import { getHistory, addMessageToHistory } from './memoryService.js';
@@ -112,6 +112,25 @@ app.post('/webhook', async (req, res) => {
                     if (batchFails < intents.length) {
                       console.log(`Missing part ${intent.voice_part} in batch request. Skipping error message.`);
                       continue;
+                    }
+                  }
+
+                  if (intent.action === 'info' && intent.info_type === 'paleta') {
+                    try {
+                      console.log('Buscando imagens da paleta...');
+                      const paletteImages = await getPaletteImagesFromDrive();
+                      for (const img of paletteImages) {
+                        const buffer = await downloadFileBuffer(img.id);
+                        const media_id = await uploadMediaToWhatsApp(buffer, img.mimeType, img.name);
+                        await sendWhatsAppMessage({
+                          messaging_product: 'whatsapp',
+                          to: sender_phone,
+                          type: 'image',
+                          image: { id: media_id }
+                        });
+                      }
+                    } catch (err) {
+                      console.error('Erro ao buscar e enviar imagens da paleta:', err);
                     }
                   }
 

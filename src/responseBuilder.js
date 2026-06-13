@@ -59,6 +59,10 @@ export function buildResponse(intent, driveResult, recipient_phone) {
         name: "Igreja Adventista da Asa Norte",
         address: "SGAN 608 Módulo B - Brasília, DF"
       };
+    } else if (intent.info_type === 'paleta') {
+      message_text = `Essa é a paleta de cores do coral! 🎨`;
+      api_payload.type = 'text';
+      api_payload.text = { body: message_text };
     } else {
       message_text = `Não tenho essa informação no momento.`;
       api_payload.type = 'text';

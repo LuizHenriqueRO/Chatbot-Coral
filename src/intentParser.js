@@ -39,11 +39,11 @@ Retorne o formato:
 }
 
 CENÁRIO 3: Informações Estáticas (action: "info")
-Se o usuário pedir a agenda do coral (ex: "Agenda do Coral"), o link geral do drive dos kits (ex: "Link dos Kits"), ou a localização/endereço da igreja (ex: "Localização da Igreja").
+Se o usuário pedir a agenda do coral (ex: "Agenda do Coral"), o link geral do drive dos kits (ex: "Link dos Kits"), a localização/endereço da igreja (ex: "Localização da Igreja"), ou a paleta de cores/vestimenta do coral (ex: "Qual a paleta de cores", "Cores de vestimenta").
 Retorne o formato:
 {
   "action": "info",
-  "info_type": "[agenda | link_kits | localizacao]"
+  "info_type": "[agenda | link_kits | localizacao | paleta]"
 }
 
 REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:

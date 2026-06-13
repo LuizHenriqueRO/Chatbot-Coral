@@ -8,6 +8,7 @@ const GOOGLE_DRIVE_LOUVOR_FOLDER_ID = process.env.GOOGLE_DRIVE_LOUVOR;
 const GOOGLE_DRIVE_HINARIO_FOLDER_ID = process.env.GOOGLE_DRIVE_HINARIO_FOLDER_ID;
 const GOOGLE_DRIVE_EGW_FOLDER_ID = process.env.GOOGLE_DRIVE_EGW_FOLDER_ID;
 const GOOGLE_DRIVE_LICAO_FOLDER_ID = process.env.GOOGLE_DRIVE_LICAO;
+const GOOGLE_DRIVE_PALETA = process.env.GOOGLE_DRIVE_PALETA;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 let jwtClient;
@@ -325,4 +326,30 @@ export async function downloadFileBuffer(fileId) {
   );
 
   return response.data;
+}
+
+export async function getPaletteImagesFromDrive() {
+  if (!drive) {
+    initGoogleDrive();
+    if (!drive) {
+      throw new Error('Google Drive service not initialized.');
+    }
+  }
+
+  if (!GOOGLE_DRIVE_PALETA) {
+    console.error('GOOGLE_DRIVE_PALETA not set.');
+    return [];
+  }
+
+  try {
+    const response = await drive.files.list({
+      q: `'${GOOGLE_DRIVE_PALETA}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
+      fields: 'files(id, name, mimeType)',
+      pageSize: 10,
+    });
+    return response.data.files || [];
+  } catch (error) {
+    console.error('Erro ao buscar imagens da paleta no Google Drive:', error);
+    return [];
+  }
 }
