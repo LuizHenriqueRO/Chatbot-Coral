@@ -42,7 +42,7 @@ export function buildResponse(intent, driveResult, recipient_phone) {
     }
   } else if (intent.action === 'info') {
     if (intent.info_type === 'agenda') {
-      message_text = `🗓️ *Agenda do Coral* 📍 \n\n(1° semestre)\n13/06 - sábado 9h - IASD Asa Norte\n14/06 - domingo 19h - IASD Asa Norte\n27/06 - sábado 18h - Vigília`;
+      message_text = `🗓️ *Agenda do Coral (2º semestre)* 📍\n\n*AGOSTO*\n22/08 - sábado 9h - IASD Asa Norte\n23/08 - domingo 19h - IASD Asa Norte\n29/08 - sábado 15h - Encontro de Corais (Gama Oeste)\n\n*SETEMBRO*\n26/09 - sábado 9h - IASD Asa Norte\n27/09 - domingo 19h - IASD Asa Norte\n\n*OUTUBRO*\n31/10 - sábado 9h - IASD Asa Norte\n\n*NOVEMBRO*\n06 a 08/11 - Viagem a Campos Belos\n15/11 - domingo 19h - IASD Asa Norte\n\n*DEZEMBRO*\n05/12 - sábado 17h - IASD Estância 2 sede\n12/12 - sábado 19h - Musical de natal - IASD Asa Norte`;
       api_payload.type = 'text';
       api_payload.text = { body: message_text };
     } else if (intent.info_type === 'link_kits') {
