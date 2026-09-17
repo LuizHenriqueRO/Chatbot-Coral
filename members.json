@@ -4,5 +4,12 @@
     "name": "Luiz",
     "phone": "556198086374",
     "birthday": "17/09"
+  },
+  {
+    "id": 2,
+    "name": "Henrique",
+    "phone": "556198365414",
+    "birthday": "17/09"
   }
 ]
+
