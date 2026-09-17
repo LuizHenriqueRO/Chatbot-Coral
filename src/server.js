@@ -221,7 +221,7 @@ async function sendWhatsAppTemplateMessage(recipient_phone, templateName, namePa
             {
               type: 'image',
               image: {
-                link: 'https://raw.githubusercontent.com/github/explore/master/topics/javascript/javascript.png'
+                link: 'https://www.anaclaudiapersonalizados.com.br/wp-content/uploads/2025/01/mensagens-curtas-de-parabens.png'
               }
             }
           ]
