@@ -3,9 +3,9 @@ import path from 'path';
 import cron from 'node-cron';
 
 export function startCronJobs(sendTemplateMessageFn) {
-  // Configura para rodar todos os dias às 09:00 da manhã no fuso do Brasil
-  cron.schedule('0 9 * * *', () => {
-    console.log('[CRON] Iniciando verificação diária de aniversariantes (09:00)...');
+  // Configura para rodar a cada 5 minutos (apenas para testes)
+  cron.schedule('*/5 * * * *', () => {
+    console.log('[CRON] Iniciando verificação diária de aniversariantes (teste a cada 5 min)...');
 
     try {
       // Lê o arquivo JSON com os membros
