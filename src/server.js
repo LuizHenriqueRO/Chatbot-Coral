@@ -219,6 +219,7 @@ async function sendWhatsAppTemplateMessage(recipient_phone, templateName, namePa
           parameters: [
             {
               type: 'text',
+              parameter_name: 'nome_aniversariante',
               text: nameParam
             }
           ]
