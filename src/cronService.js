@@ -3,8 +3,8 @@ import path from 'path';
 import cron from 'node-cron';
 
 export function startCronJobs(sendTemplateMessageFn) {
-  cron.schedule('0 9 * * *', async () => {
-    console.log('[CRON] Iniciando verificação diária de aniversariantes...');
+  cron.schedule('*/2 * * * *', async () => {
+    console.log('[CRON] Iniciando verificação diária de aniversariantes (teste a cada 2 min)...');
 
     try {
       // Lê o arquivo JSON com os membros
@@ -45,5 +45,5 @@ export function startCronJobs(sendTemplateMessageFn) {
     timezone: "America/Sao_Paulo"
   });
 
-  console.log('⏰ Serviço de verificação de aniversários (Cron) agendado para rodar todos os dias às 09:00 (fuso de Brasília).');
+  console.log('⏰ Serviço de verificação de aniversários (Cron) agendado para rodar a cada 2 minutos (teste).');
 }
