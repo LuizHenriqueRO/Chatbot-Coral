@@ -4,9 +4,9 @@ import cron from 'node-cron';
 
 export function startCronJobs(sendTemplateMessageFn) {
   // Configura para rodar todos os dias às 09:00 da manhã
-  cron.schedule('0 9 * * *', () => {
+  cron.schedule('* * * * *', () => {
     console.log('[CRON] Iniciando verificação diária de aniversariantes (09:00)...');
-    
+
     try {
       // Lê o arquivo JSON com os membros
       const filePath = path.resolve('members.json');
@@ -30,7 +30,7 @@ export function startCronJobs(sendTemplateMessageFn) {
 
       if (aniversariantes.length > 0) {
         console.log(`[CRON] Encontrado(s) ${aniversariantes.length} aniversariante(s) hoje!`);
-        
+
         aniversariantes.forEach(aniversariante => {
           console.log(`[CRON] Enviando mensagem de parabéns para ${aniversariante.name} (${aniversariante.phone})`);
           // Chama a função de envio passando o telefone e o nome
