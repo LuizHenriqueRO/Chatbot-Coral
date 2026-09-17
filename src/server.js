@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { google } from 'googleapis';
 import { parseIntent } from './intentParser.js';
