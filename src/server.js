@@ -31,6 +31,19 @@ app.get('/webhook', (req, res) => {
   }
 });
 
+app.get('/test-birthday', async (req, res) => {
+  const phone = req.query.phone;
+  const name = req.query.name;
+
+  if (!phone || !name) {
+    return res.status(400).send('Por favor, forneça o telefone e o nome na URL. Exemplo: /test-birthday?phone=5561999999999&name=João');
+  }
+
+  console.log(`Testando envio de template para: ${phone} com nome: ${name}`);
+  await sendWhatsAppTemplateMessage(phone, 'mensagem_aniversario_coral', name);
+  res.send(`Requisição de teste enviada para o telefone ${phone} com o nome ${name}. Verifique o terminal e o seu celular.`);
+});
+
 app.post('/webhook', async (req, res) => {
   res.status(200).send('EVENT_RECEIVED'); // Evita timeout da Meta
   
@@ -181,6 +194,58 @@ async function sendWhatsAppMessage(payload) {
     }
   } catch (error) {
     console.error('Error sending message to WhatsApp:', error);
+  }
+}
+
+async function sendWhatsAppTemplateMessage(recipient_phone, templateName, nameParam) {
+  if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
+    console.error('WhatsApp API environment variables not set.');
+    return;
+  }
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    to: recipient_phone,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: 'pt_BR'
+      },
+      components: [
+        {
+          type: 'body',
+          parameters: [
+            {
+              type: 'text',
+              text: nameParam
+            }
+          ]
+        }
+      ]
+    }
+  };
+
+  try {
+    const response = await fetch(`https://graph.facebook.com/v19.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    console.log('WhatsApp Template API response:', JSON.stringify(data, null, 2));
+
+    if (response.ok) {
+      console.log('Template Message sent successfully to WhatsApp!');
+    } else {
+      console.error('Failed to send template message to WhatsApp:', data);
+    }
+  } catch (error) {
+    console.error('Error sending template message to WhatsApp:', error);
   }
 }
 
