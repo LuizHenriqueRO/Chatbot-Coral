@@ -3,7 +3,7 @@ import path from 'path';
 import cron from 'node-cron';
 
 export function startCronJobs(sendTemplateMessageFn) {
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('0 9 * * *', async () => {
     console.log('[CRON] Iniciando verificação diária de aniversariantes (teste a cada 2 min)...');
 
     try {
