@@ -6,6 +6,7 @@ import { searchDrive, downloadFileBuffer, getPaletteImagesFromDrive } from './go
 import { buildResponse } from './responseBuilder.js';
 import { uploadMediaToWhatsApp } from './whatsappMediaService.js';
 import { getHistory, addMessageToHistory } from './memoryService.js';
+import { startCronJobs } from './cronService.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -220,7 +221,7 @@ async function sendWhatsAppTemplateMessage(recipient_phone, templateName, namePa
             {
               type: 'image',
               image: {
-                link: 'https://images.unsplash.com/photo-1558636508-e0db3814bd1d?q=80&w=800&auto=format&fit=crop'
+                link: 'https://raw.githubusercontent.com/github/explore/master/topics/javascript/javascript.png'
               }
             }
           ]
@@ -261,6 +262,9 @@ async function sendWhatsAppTemplateMessage(recipient_phone, templateName, namePa
     console.error('Error sending template message to WhatsApp:', error);
   }
 }
+
+// Inicia os agendamentos automáticos (ex: aniversários diários)
+startCronJobs(sendWhatsAppTemplateMessage);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${PORT} e ouvindo requisições externas`);
