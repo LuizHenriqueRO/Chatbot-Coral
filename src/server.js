@@ -215,6 +215,17 @@ async function sendWhatsAppTemplateMessage(recipient_phone, templateName, namePa
       },
       components: [
         {
+          type: 'header',
+          parameters: [
+            {
+              type: 'image',
+              image: {
+                link: 'https://images.unsplash.com/photo-1558636508-e0db3814bd1d?q=80&w=800&auto=format&fit=crop'
+              }
+            }
+          ]
+        },
+        {
           type: 'body',
           parameters: [
             {
