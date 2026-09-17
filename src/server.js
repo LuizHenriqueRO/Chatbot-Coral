@@ -33,18 +33,6 @@ app.get('/webhook', (req, res) => {
   }
 });
 
-app.get('/test-birthday', async (req, res) => {
-  const phone = req.query.phone;
-  const name = req.query.name;
-
-  if (!phone || !name) {
-    return res.status(400).send('Por favor, forneça o telefone e o nome na URL. Exemplo: /test-birthday?phone=5561999999999&name=João');
-  }
-
-  console.log(`Testando envio de template para: ${phone} com nome: ${name}`);
-  await sendWhatsAppTemplateMessage(phone, 'mensagem_aniversario_coral', name);
-  res.send(`Requisição de teste enviada para o telefone ${phone} com o nome ${name}. Verifique o terminal e o seu celular.`);
-});
 
 app.post('/webhook', async (req, res) => {
   res.status(200).send('EVENT_RECEIVED'); // Evita timeout da Meta
@@ -162,7 +150,12 @@ app.post('/webhook', async (req, res) => {
             }
           }
           else if (change.value.statuses) {
-            console.log('Status recebido (entregue/lido):', change.value.statuses[0].status);
+            const statusObj = change.value.statuses[0];
+            console.log('Status recebido (entregue/lido):', statusObj.status);
+            
+            if (statusObj.errors) {
+              console.error('🚨 ERRO DE ENTREGA DA META:', JSON.stringify(statusObj.errors, null, 2));
+            }
           }
         }
       }
