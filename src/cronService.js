@@ -3,7 +3,7 @@ import path from 'path';
 import cron from 'node-cron';
 
 export function startCronJobs(sendTemplateMessageFn) {
-  cron.schedule('0 9 * * *', () => {
+  cron.schedule('0 9 * * *', async () => {
     console.log('[CRON] Iniciando verificação diária de aniversariantes...');
 
     try {
@@ -25,34 +25,18 @@ export function startCronJobs(sendTemplateMessageFn) {
 
       console.log(`[CRON] Data de hoje: ${todayString}`);
 
-      const currentYear = hojeBrasil.getFullYear();
-      let hasChanges = false;
-
-      // Filtra quem faz aniversário hoje E que AINDA NÃO recebeu mensagem este ano
-      const aniversariantes = members.filter(member => {
-        return member.birthday === todayString && member.last_notified_year !== currentYear;
-      });
+      const aniversariantes = members.filter(member => member.birthday === todayString);
 
       if (aniversariantes.length > 0) {
-        console.log(`[CRON] Encontrado(s) ${aniversariantes.length} aniversariante(s) hoje que ainda não receberam mensagem!`);
+        console.log(`[CRON] Encontrado(s) ${aniversariantes.length} aniversariante(s) hoje!`);
 
-        aniversariantes.forEach(aniversariante => {
+        for (const aniversariante of aniversariantes) {
           console.log(`[CRON] Enviando mensagem de parabéns para ${aniversariante.name} (${aniversariante.phone})`);
-          // Chama a função de envio passando o telefone e o nome
-          sendTemplateMessageFn(aniversariante.phone, 'mensagem_aniversario_coral', aniversariante.name);
-          
-          // Registra que a mensagem já foi enviada para essa pessoa neste ano
-          aniversariante.last_notified_year = currentYear;
-          hasChanges = true;
-        });
-
-        // Se enviou para alguém, salva a alteração no arquivo members.json
-        if (hasChanges) {
-          fs.writeFileSync(filePath, JSON.stringify(members, null, 2), 'utf-8');
-          console.log('[CRON] Arquivo members.json atualizado para evitar reenvios neste ano.');
+          // Espera o envio terminar antes de passar para o próximo da lista (evita bloqueios da Meta por envios simultâneos)
+          await sendTemplateMessageFn(aniversariante.phone, 'mensagem_aniversario_coral', aniversariante.name);
         }
       } else {
-        console.log('[CRON] Nenhum aniversariante pendente de notificação para hoje.');
+        console.log('[CRON] Nenhum aniversariante encontrado para hoje.');
       }
     } catch (error) {
       console.error('[CRON] Erro ao verificar aniversariantes:', error);
