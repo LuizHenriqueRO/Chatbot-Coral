@@ -1,14 +1,8 @@
 [
   {
     "id": 1,
-    "name": "Henrique",
-    "phone": "5561999999999",
+    "name": "Luiz",
+    "phone": "556198086374",
     "birthday": "17/09"
-  },
-  {
-    "id": 2,
-    "name": "João",
-    "phone": "5511988888888",
-    "birthday": "25/12"
   }
 ]
