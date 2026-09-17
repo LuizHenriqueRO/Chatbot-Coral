@@ -3,9 +3,8 @@ import path from 'path';
 import cron from 'node-cron';
 
 export function startCronJobs(sendTemplateMessageFn) {
-  // Configura para rodar a cada 5 minutos (apenas para testes)
-  cron.schedule('*/5 * * * *', () => {
-    console.log('[CRON] Iniciando verificação diária de aniversariantes (teste a cada 5 min)...');
+  cron.schedule('0 9 * * *', () => {
+    console.log('[CRON] Iniciando verificação diária de aniversariantes...');
 
     try {
       // Lê o arquivo JSON com os membros
@@ -26,18 +25,34 @@ export function startCronJobs(sendTemplateMessageFn) {
 
       console.log(`[CRON] Data de hoje: ${todayString}`);
 
-      const aniversariantes = members.filter(member => member.birthday === todayString);
+      const currentYear = hojeBrasil.getFullYear();
+      let hasChanges = false;
+
+      // Filtra quem faz aniversário hoje E que AINDA NÃO recebeu mensagem este ano
+      const aniversariantes = members.filter(member => {
+        return member.birthday === todayString && member.last_notified_year !== currentYear;
+      });
 
       if (aniversariantes.length > 0) {
-        console.log(`[CRON] Encontrado(s) ${aniversariantes.length} aniversariante(s) hoje!`);
+        console.log(`[CRON] Encontrado(s) ${aniversariantes.length} aniversariante(s) hoje que ainda não receberam mensagem!`);
 
         aniversariantes.forEach(aniversariante => {
           console.log(`[CRON] Enviando mensagem de parabéns para ${aniversariante.name} (${aniversariante.phone})`);
           // Chama a função de envio passando o telefone e o nome
           sendTemplateMessageFn(aniversariante.phone, 'mensagem_aniversario_coral', aniversariante.name);
+          
+          // Registra que a mensagem já foi enviada para essa pessoa neste ano
+          aniversariante.last_notified_year = currentYear;
+          hasChanges = true;
         });
+
+        // Se enviou para alguém, salva a alteração no arquivo members.json
+        if (hasChanges) {
+          fs.writeFileSync(filePath, JSON.stringify(members, null, 2), 'utf-8');
+          console.log('[CRON] Arquivo members.json atualizado para evitar reenvios neste ano.');
+        }
       } else {
-        console.log('[CRON] Nenhum aniversariante encontrado para hoje.');
+        console.log('[CRON] Nenhum aniversariante pendente de notificação para hoje.');
       }
     } catch (error) {
       console.error('[CRON] Erro ao verificar aniversariantes:', error);
