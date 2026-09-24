@@ -124,10 +124,17 @@ export function buildResponse(intent, driveResult, mediaResult, recipient_phone)
         api_payload.type = 'audio';
         api_payload.audio = { id: mediaResult.media_id };
       } else {
-        message_text = 'Aqui está o seu vídeo! 🎬';
-        message_type = 'video';
-        api_payload.type = 'video';
-        api_payload.video = { id: mediaResult.media_id, caption: message_text };
+        if (mediaResult.sendAsDocument) {
+          message_text = 'Este vídeo é grande demais para o limite nativo, então estou enviando como um arquivo de documento! 🎬';
+          message_type = 'document';
+          api_payload.type = 'document';
+          api_payload.document = { id: mediaResult.media_id, caption: message_text, filename: mediaResult.filename };
+        } else {
+          message_text = 'Aqui está o seu vídeo! 🎬';
+          message_type = 'video';
+          api_payload.type = 'video';
+          api_payload.video = { id: mediaResult.media_id, caption: message_text };
+        }
       }
     } else {
       message_text = mediaResult && mediaResult.error 

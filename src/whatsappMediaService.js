@@ -1,4 +1,4 @@
-export async function uploadMediaToWhatsApp(buffer, mimeType, filename) {
+export async function uploadMediaToWhatsApp(buffer, mimeType, filename, type = null) {
   const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
@@ -12,6 +12,9 @@ export async function uploadMediaToWhatsApp(buffer, mimeType, filename) {
   const formData = new FormData();
   formData.append('messaging_product', 'whatsapp');
   formData.append('file', blob, filename);
+  if (type) {
+    formData.append('type', type);
+  }
 
   const response = await fetch(endpoint, {
     method: 'POST',

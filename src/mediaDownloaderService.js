@@ -134,15 +134,21 @@ export async function downloadMedia(url, format) {
         const stats = fs.statSync(filepath);
         const fileSizeInMB = stats.size / (1024 * 1024);
 
-        if (fileSizeInMB <= 60) {
-          return { success: true, filepath, mimeType: 'video/mp4', filename: file };
+        if (fileSizeInMB <= 15.5) {
+          return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: false };
         } else {
-          fs.unlinkSync(filepath);
-          console.log(`Vídeo ficou com ${fileSizeInMB.toFixed(2)}MB, o que excede o limite. Apagando e tentando qualidade menor...`);
           if (attempt === 1) {
+             fs.unlinkSync(filepath); // Apaga arquivo muito pesado para vídeo nativo
+             console.log(`Vídeo ficou com ${fileSizeInMB.toFixed(2)}MB, excede o limite nativo da API (16MB). Apagando e tentando 480p...`);
              currentHeight = 480;
           } else {
-             return { success: false, error: 'O vídeo é muito longo ou pesado e não pode ser enviado pelo WhatsApp mesmo na menor qualidade possível.' };
+             if (fileSizeInMB <= 95) {
+                 console.log(`Mesmo em 480p, vídeo tem ${fileSizeInMB.toFixed(2)}MB. Retornando para ser enviado como documento (limite 100MB).`);
+                 return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: true };
+             } else {
+                 fs.unlinkSync(filepath);
+                 return { success: false, error: 'O vídeo é muito pesado (mais de 100MB) e não pode ser enviado pelo WhatsApp.' };
+             }
           }
         }
       }
