@@ -131,11 +131,17 @@ Resposta obrigatória (pois é um livro listado que possui volumes e o número N
 Usuário: "Quero baixar um vídeo"
 Resposta: { "intents": [ {"action": "chat", "chat_response": "Ok! Me envie o link do vídeo (YouTube, TikTok ou Instagram)."} ] }
 
-Usuário: "https://youtu.be/xSeHW-xqYNk"
-Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": null} ] }
+*(Contexto)* User: "Quero baixar um vídeo" / Bot: "Ok! Me envie o link do vídeo..."
+Usuário digita: "https://youtu.be/xSeHW-xqYNk"
+Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": "video"} ] } // (Deduziu "video" do contexto passado)
 
-Usuário: "Baixe o áudio desse vídeo https://youtu.be/xSeHW-xqYNk"
-Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": "audio"} ] }
+*(Contexto)* User: "Baixar áudio" / Bot: "Me envie o link..."
+Usuário digita: "https://youtu.be/xSeHW-xqYNk"
+Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": "audio"} ] } // (Deduziu "audio" do contexto)
+
+*(Sem contexto anterior de formato)*
+Usuário digita: "https://youtu.be/xSeHW-xqYNk"
+Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": null} ] } // (Não deu pra deduzir, retorna null)
 
 Usuário: "Baixe esse vídeo https://youtu.be/xSeHW-xqYNk"
 Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": "video"} ] }
