@@ -121,8 +121,7 @@ export async function downloadMedia(url, format) {
 
         await Promise.race([
           ytDlpExec(url, {
-            formatSort: `res:${currentHeight},vcodec:h264,acodec:m4a`,
-            format: `bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best`,
+            format: `bestvideo[height<=${currentHeight}][vcodec^=avc][ext=mp4]+bestaudio[ext=m4a]/best[height<=${currentHeight}][vcodec^=avc][ext=mp4]/best[height<=${currentHeight}][ext=mp4]/best[ext=mp4]/best`,
             output: attemptPath,
             ffmpegLocation: ffmpegPath,
             mergeOutputFormat: 'mp4',
