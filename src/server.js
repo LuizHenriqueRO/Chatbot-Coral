@@ -120,8 +120,7 @@ app.post('/webhook', async (req, res) => {
                       try {
                         const buffer = fs.readFileSync(mediaResult.filepath);
                         const typeParam = mediaResult.sendAsDocument ? 'document' : null;
-                        const uploadMime = mediaResult.sendAsDocument ? 'application/octet-stream' : mediaResult.mimeType;
-                        const media_id = await uploadMediaToWhatsApp(buffer, uploadMime, mediaResult.filename, typeParam);
+                        const media_id = await uploadMediaToWhatsApp(buffer, mediaResult.mimeType, mediaResult.filename, typeParam);
                         mediaResult.media_id = media_id;
                         fs.unlinkSync(mediaResult.filepath); // Apaga do storage local depois de upar
                       } catch (err) {
