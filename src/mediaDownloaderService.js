@@ -88,14 +88,18 @@ export async function downloadMedia(url, format) {
       const outPath = path.join(TEMP_DIR, `${baseFilename}.%(ext)s`);
       console.log(`Iniciando download do áudio de ${url}...`);
 
-      await ytDlpExec(url, {
-        extractAudio: true,
-        audioFormat: 'mp3',
-        output: outPath,
-        ffmpegLocation: ffmpegPath,
-        noCheckCertificates: true,
-        noWarnings: true,
-      });
+      await Promise.race([
+        ytDlpExec(url, {
+          extractAudio: true,
+          audioFormat: 'mp3',
+          output: outPath,
+          ffmpegLocation: ffmpegPath,
+          extractorArgs: 'youtube:player_client=android',
+          noCheckCertificates: true,
+          noWarnings: true,
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
+      ]);
 
       const downloadedFile = path.join(TEMP_DIR, `${baseFilename}.mp3`);
       if (fs.existsSync(downloadedFile)) {
@@ -115,15 +119,19 @@ export async function downloadMedia(url, format) {
         const attemptPath = path.join(TEMP_DIR, `${baseFilename}_${currentHeight}.%(ext)s`);
         console.log(`Iniciando download do vídeo de ${url} na qualidade ${currentHeight}p... (Tentativa ${attempt})`);
 
-        await ytDlpExec(url, {
-          formatSort: `res:${currentHeight},vcodec:h264,acodec:m4a`,
-          format: `bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best`,
-          output: attemptPath,
-          ffmpegLocation: ffmpegPath,
-          mergeOutputFormat: 'mp4',
-          noCheckCertificates: true,
-          noWarnings: true,
-        });
+        await Promise.race([
+          ytDlpExec(url, {
+            formatSort: `res:${currentHeight},vcodec:h264,acodec:m4a`,
+            format: `bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best`,
+            output: attemptPath,
+            ffmpegLocation: ffmpegPath,
+            mergeOutputFormat: 'mp4',
+            extractorArgs: 'youtube:player_client=android',
+            noCheckCertificates: true,
+            noWarnings: true,
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
+        ]);
 
         const files = fs.readdirSync(TEMP_DIR);
         const file = files.find(f => f.startsWith(`${baseFilename}_${currentHeight}`));

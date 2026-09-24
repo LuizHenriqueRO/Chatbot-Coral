@@ -146,6 +146,9 @@ Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/x
 Usuário: "Baixe esse vídeo https://youtu.be/xSeHW-xqYNk"
 Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": "video"} ] }
 
+Usuário: "https://www.instagram.com/reel/C8q8y91x9/?igsh=MzRlODBiNWFlZA=="
+Resposta: { "intents": [ {"action": "download_media", "url": "https://www.instagram.com/reel/C8q8y91x9/?igsh=MzRlODBiNWFlZA==", "format": null} ] }
+
 *(Contexto)* User: https://youtu.be/xSeHW-xqYNk / Bot: Você quer baixar o vídeo ou apenas o áudio (mp3)?
 Usuário digita: "Em mp3"
 Resposta: { "intents": [ {"action": "download_media", "url": "https://youtu.be/xSeHW-xqYNk", "format": "audio"} ] }
