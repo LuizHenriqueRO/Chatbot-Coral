@@ -116,7 +116,8 @@ export async function downloadMedia(url, format) {
         console.log(`Iniciando download do vídeo de ${url} na qualidade ${currentHeight}p... (Tentativa ${attempt})`);
 
         await ytDlpExec(url, {
-          format: `bestvideo[height<=${currentHeight}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${currentHeight}][ext=mp4]/best`,
+          formatSort: `res:${currentHeight},vcodec:h264,acodec:m4a`,
+          format: `bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best`,
           output: attemptPath,
           ffmpegLocation: ffmpegPath,
           mergeOutputFormat: 'mp4',

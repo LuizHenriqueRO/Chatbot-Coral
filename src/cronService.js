@@ -5,7 +5,7 @@ import { updateYtDlp } from './mediaDownloaderService.js';
 
 export function startCronJobs(sendTemplateMessageFn) {
   cron.schedule('0 9 * * *', async () => {
-    console.log('[CRON] Iniciando verificação diária de aniversariantes (teste a cada 2 min)...');
+    console.log('[CRON] Iniciando verificação diária de aniversariantes (teste às 9h da manhã todos os dias)...');
 
     try {
       // Lê o arquivo JSON com os membros
