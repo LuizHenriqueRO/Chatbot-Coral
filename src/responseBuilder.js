@@ -1,5 +1,5 @@
 
-export function buildResponse(intent, driveResult, recipient_phone) {
+export function buildResponse(intent, driveResult, mediaResult, recipient_phone) {
   let message_text = '';
   let message_type = 'text';
   let api_payload = {
@@ -113,6 +113,27 @@ export function buildResponse(intent, driveResult, recipient_phone) {
       } else {
         message_text = `Não encontrei '${intent.song_name}' no Drive. Verifique o nome da música ou fale com o regente. 🎵`;
       }
+      api_payload.type = 'text';
+      api_payload.text = { body: message_text };
+    }
+  } else if (intent.action === 'download_media') {
+    if (mediaResult && mediaResult.success && mediaResult.media_id) {
+      if (intent.format === 'audio') {
+        message_text = 'Aqui está o seu áudio! 🎵';
+        message_type = 'audio';
+        api_payload.type = 'audio';
+        api_payload.audio = { id: mediaResult.media_id };
+      } else {
+        message_text = 'Aqui está o seu vídeo! 🎬';
+        message_type = 'video';
+        api_payload.type = 'video';
+        api_payload.video = { id: mediaResult.media_id, caption: message_text };
+      }
+    } else {
+      message_text = mediaResult && mediaResult.error 
+        ? `Desculpe, ocorreu um erro ao baixar: ${mediaResult.error}`
+        : 'Desculpe, não foi possível baixar o link informado. Tente novamente mais tarde!';
+      message_type = 'text';
       api_payload.type = 'text';
       api_payload.text = { body: message_text };
     }

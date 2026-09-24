@@ -1,3 +1,4 @@
+import fs from 'fs';
 import 'dotenv/config';
 import express from 'express';
 import { google } from 'googleapis';
@@ -7,6 +8,7 @@ import { buildResponse } from './responseBuilder.js';
 import { uploadMediaToWhatsApp } from './whatsappMediaService.js';
 import { getHistory, addMessageToHistory } from './memoryService.js';
 import { startCronJobs } from './cronService.js';
+import { downloadMedia } from './mediaDownloaderService.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -79,7 +81,57 @@ app.post('/webhook', async (req, res) => {
 
                 for (const intent of intents) {
                   let driveResult = null;
-                  if (intent.action === 'search') {
+                  let mediaResult = null;
+                  
+                  if (intent.action === 'download_media') {
+                    if (!intent.format) {
+                      const responseMsg = 'Você quer baixar o vídeo ou apenas o áudio (mp3)?';
+                      await addMessageToHistory(sender_phone, 'assistant', responseMsg);
+                      await sendWhatsAppMessage({
+                        messaging_product: 'whatsapp',
+                        to: sender_phone,
+                        type: 'text',
+                        text: { body: responseMsg }
+                      });
+                      continue;
+                    }
+
+                    if (!intent.url) {
+                      const responseMsg = 'Por favor, envie o link do vídeo que você quer baixar.';
+                      await addMessageToHistory(sender_phone, 'assistant', responseMsg);
+                      await sendWhatsAppMessage({
+                        messaging_product: 'whatsapp',
+                        to: sender_phone,
+                        type: 'text',
+                        text: { body: responseMsg }
+                      });
+                      continue;
+                    }
+
+                    await sendWhatsAppMessage({
+                      messaging_product: 'whatsapp',
+                      to: sender_phone,
+                      type: 'text',
+                      text: { body: 'Iniciando o download... Isso pode levar um tempinho! ⏳' }
+                    });
+
+                    mediaResult = await downloadMedia(intent.url, intent.format);
+                    if (mediaResult.success) {
+                      try {
+                        const buffer = fs.readFileSync(mediaResult.filepath);
+                        const media_id = await uploadMediaToWhatsApp(buffer, mediaResult.mimeType, mediaResult.filename);
+                        mediaResult.media_id = media_id;
+                        fs.unlinkSync(mediaResult.filepath); // Apaga do storage local depois de upar
+                      } catch (err) {
+                        console.error('Erro ao subir para o whatsapp:', err);
+                        mediaResult.success = false;
+                        mediaResult.error = 'Ocorreu um erro ao tentar preparar o arquivo para o WhatsApp.';
+                        if (fs.existsSync(mediaResult.filepath)) {
+                           fs.unlinkSync(mediaResult.filepath);
+                        }
+                      }
+                    }
+                  } else if (intent.action === 'search') {
                     driveResult = await searchDrive(intent.song_name, intent.file_type, intent.voice_part, intent.category);
                     console.log('Drive search result:', JSON.stringify(driveResult, null, 2));
 
@@ -118,7 +170,7 @@ app.post('/webhook', async (req, res) => {
                     }
                   }
 
-                  const response = buildResponse(intent, driveResult, sender_phone);
+                  const response = buildResponse(intent, driveResult, mediaResult, sender_phone);
                   console.log('Response built:', JSON.stringify(response, null, 2));
                   
                   await addMessageToHistory(sender_phone, 'assistant', response.message_text);

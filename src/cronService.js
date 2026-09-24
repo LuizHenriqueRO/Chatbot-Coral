@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import cron from 'node-cron';
+import { updateYtDlp } from './mediaDownloaderService.js';
 
 export function startCronJobs(sendTemplateMessageFn) {
   cron.schedule('0 9 * * *', async () => {
@@ -46,4 +47,13 @@ export function startCronJobs(sendTemplateMessageFn) {
   });
 
   console.log('⏰ Serviço de verificação de aniversários (Cron) agendado para rodar a cada 2 minutos (teste).');
+
+  cron.schedule('0 3 * * *', async () => {
+    console.log('[CRON] Iniciando atualização automática do yt-dlp...');
+    await updateYtDlp();
+  }, {
+    timezone: "America/Sao_Paulo"
+  });
+
+  console.log('⏰ Serviço de atualização do yt-dlp agendado para rodar diariamente às 03:00.');
 }
