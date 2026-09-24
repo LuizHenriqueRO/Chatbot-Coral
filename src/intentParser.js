@@ -54,9 +54,9 @@ Retorne o formato:
   "url": "[A URL do vídeo se fornecida, ou null se ele não forneceu]",
   "format": "[video | audio | null]"
 }
-- Use "video" se o usuário disser que quer baixar o vídeo (ex: "Baixe esse vídeo", "Baixar vídeo").
-- Use "audio" se o usuário disser explicitamente que quer o áudio ou mp3.
-- Use null se o usuário APENAS enviar o link (neste caso o bot vai perguntar se ele quer áudio ou vídeo) OU se ele não especificou o que quer. Se ele nem enviar a URL, "url" deve ser null.
+- Use "video" se o usuário disser que quer baixar o vídeo (ex: "Baixe esse vídeo", "Baixar vídeo", "vídeop") OU se o histórico mostrar que ele pediu um vídeo antes de enviar o link.
+- Use "audio" se o usuário disser explicitamente que quer o áudio, mp3, OU se o histórico mostrar que ele pediu um áudio antes de enviar o link.
+- Use null APENAS SE o usuário enviar o link e não houver absolutamente nenhuma indicação na mensagem atual OU NO HISTÓRICO de que ele quer áudio ou vídeo. Se ele nem enviar a URL, "url" deve ser null.
 
 REGRAS CRÍTICAS PARA BUSCA E CATEGORIZAÇÃO E CONTEXTO:
 1. CATEGORIA (category) E TIPO (file_type): Deduza inteligentemente o que o usuário quer.
