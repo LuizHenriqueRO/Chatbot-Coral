@@ -117,8 +117,13 @@ export function buildResponse(intent, driveResult, mediaResult, recipient_phone)
       api_payload.text = { body: message_text };
     }
   } else if (intent.action === 'download_media') {
-    if (mediaResult && mediaResult.success && mediaResult.media_id) {
-      if (intent.format === 'audio') {
+    if (mediaResult && mediaResult.success && (mediaResult.media_id || mediaResult.externalUrl)) {
+      if (mediaResult.externalUrl) {
+        message_text = `O arquivo original era muito grande para enviar pelo WhatsApp (limite de 16MB)!\n\nFizemos o upload dele para você. Baixe acessando o link abaixo:\n${mediaResult.externalUrl}\n\n⚠️ *Atenção:* O link expira em 60 minutos.`;
+        message_type = 'text';
+        api_payload.type = 'text';
+        api_payload.text = { body: message_text };
+      } else if (intent.format === 'audio') {
         message_text = 'Aqui está o seu áudio! 🎵';
         message_type = 'audio';
         api_payload.type = 'audio';

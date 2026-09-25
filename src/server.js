@@ -118,11 +118,13 @@ app.post('/webhook', async (req, res) => {
                     mediaResult = await downloadMedia(intent.url, intent.format);
                     if (mediaResult.success) {
                       try {
-                        const buffer = fs.readFileSync(mediaResult.filepath);
-                        const typeParam = mediaResult.sendAsDocument ? 'document' : null;
-                        const media_id = await uploadMediaToWhatsApp(buffer, mediaResult.mimeType, mediaResult.filename, typeParam);
-                        mediaResult.media_id = media_id;
-                        fs.unlinkSync(mediaResult.filepath); // Apaga do storage local depois de upar
+                        if (!mediaResult.externalUrl) {
+                          const buffer = fs.readFileSync(mediaResult.filepath);
+                          const typeParam = mediaResult.sendAsDocument ? 'document' : null;
+                          const media_id = await uploadMediaToWhatsApp(buffer, mediaResult.mimeType, mediaResult.filename, typeParam);
+                          mediaResult.media_id = media_id;
+                          fs.unlinkSync(mediaResult.filepath); // Apaga do storage local depois de upar
+                        }
                       } catch (err) {
                         console.error('Erro ao subir para o whatsapp:', err);
                         mediaResult.success = false;

@@ -76,6 +76,23 @@ export async function updateYtDlp() {
   }
 }
 
+async function uploadToTmpfiles(filepath, filename) {
+  const buffer = fs.readFileSync(filepath);
+  const blob = new Blob([buffer]);
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+
+  const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+    method: 'POST',
+    body: formData
+  });
+  const json = await res.json();
+  if (json.status === 'success') {
+    return json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+  }
+  throw new Error('Falha ao fazer upload temporário no servidor externo.');
+}
+
 export async function downloadMedia(url, format) {
   // Garante que o binário existe antes de baixar
   await ensureYtDlpStandalone();
@@ -102,15 +119,25 @@ export async function downloadMedia(url, format) {
       ]);
 
       const downloadedFile = path.join(TEMP_DIR, `${baseFilename}.mp3`);
-      if (fs.existsSync(downloadedFile)) {
-        return { success: true, filepath: downloadedFile, mimeType: 'audio/mpeg', filename: `${baseFilename}.mp3` };
+      let filepath = downloadedFile;
+      if (!fs.existsSync(downloadedFile)) {
+        const files = fs.readdirSync(TEMP_DIR);
+        const file = files.find(f => f.startsWith(baseFilename));
+        if (!file) return { success: false, error: 'Arquivo não encontrado após download.' };
+        filepath = path.join(TEMP_DIR, file);
       }
 
-      const files = fs.readdirSync(TEMP_DIR);
-      const file = files.find(f => f.startsWith(baseFilename));
-      if (file) return { success: true, filepath: path.join(TEMP_DIR, file), mimeType: 'audio/mpeg', filename: file };
+      const stats = fs.statSync(filepath);
+      const fileSizeInMB = stats.size / (1024 * 1024);
 
-      return { success: false, error: 'Arquivo não encontrado após download.' };
+      if (fileSizeInMB <= 15.5) {
+         return { success: true, filepath, mimeType: 'audio/mpeg', filename: `${baseFilename}.mp3`, sendAsDocument: false };
+      } else {
+         console.log(`Áudio tem ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
+         const externalUrl = await uploadToTmpfiles(filepath, `${baseFilename}.mp3`);
+         fs.unlinkSync(filepath);
+         return { success: true, externalUrl, filename: `${baseFilename}.mp3` };
+      }
     } else {
       let currentHeight = 720;
       let filepath = null;
@@ -149,13 +176,10 @@ export async function downloadMedia(url, format) {
              console.log(`Vídeo ficou com ${fileSizeInMB.toFixed(2)}MB, excede o limite nativo da API (16MB). Apagando e tentando 480p...`);
              currentHeight = 480;
           } else {
-             if (fileSizeInMB <= 95) {
-                 console.log(`Mesmo em 480p, vídeo tem ${fileSizeInMB.toFixed(2)}MB. Retornando para ser enviado como documento (limite 100MB).`);
-                 return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: true };
-             } else {
-                 fs.unlinkSync(filepath);
-                 return { success: false, error: 'O vídeo é muito pesado (mais de 100MB) e não pode ser enviado pelo WhatsApp.' };
-             }
+             console.log(`Mesmo em 480p, vídeo tem ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
+             const externalUrl = await uploadToTmpfiles(filepath, file);
+             fs.unlinkSync(filepath);
+             return { success: true, externalUrl, filename: file };
           }
         }
       }
