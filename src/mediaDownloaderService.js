@@ -143,58 +143,48 @@ export async function downloadMedia(url, format) {
          return { success: true, externalUrl, filename: `${baseFilename}.mp3` };
       }
     } else {
-      let currentHeight = 720;
+      const currentHeight = 1080;
       let filepath = null;
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const attemptPath = path.join(TEMP_DIR, `${baseFilename}_${currentHeight}.%(ext)s`);
-        console.log(`Iniciando download do vídeo de ${url} na qualidade ${currentHeight}p... (Tentativa ${attempt})`);
+      const attemptPath = path.join(TEMP_DIR, `${baseFilename}_${currentHeight}.%(ext)s`);
+      console.log(`Iniciando download do vídeo de ${url} na qualidade ${currentHeight}p...`);
 
-        await Promise.race([
-          ytDlpExec(url, {
-            format: `bestvideo[height<=${currentHeight}][vcodec^=avc][ext=mp4]+bestaudio[ext=m4a]/best[height<=${currentHeight}][vcodec^=avc][ext=mp4]/best[height<=${currentHeight}][ext=mp4]/best[ext=mp4]/best`,
-            output: attemptPath,
-            ffmpegLocation: ffmpegPath,
-            mergeOutputFormat: 'mp4',
-            extractorArgs: 'youtube:player_client=android',
-            noCheckCertificates: true,
-            noWarnings: true,
-          }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
-        ]);
+      await Promise.race([
+        ytDlpExec(url, {
+          format: `bestvideo[height<=${currentHeight}][vcodec^=avc][ext=mp4]+bestaudio[ext=m4a]/best[height<=${currentHeight}][vcodec^=avc][ext=mp4]/best[height<=${currentHeight}][ext=mp4]/best[ext=mp4]/best`,
+          output: attemptPath,
+          ffmpegLocation: ffmpegPath,
+          mergeOutputFormat: 'mp4',
+          extractorArgs: 'youtube:player_client=android',
+          noCheckCertificates: true,
+          noWarnings: true,
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
+      ]);
 
-        const files = fs.readdirSync(TEMP_DIR);
-        const file = files.find(f => f.startsWith(`${baseFilename}_${currentHeight}`));
-        
-        if (!file) throw new Error('Arquivo de vídeo não encontrado após download.');
-        filepath = path.join(TEMP_DIR, file);
+      const files = fs.readdirSync(TEMP_DIR);
+      const file = files.find(f => f.startsWith(`${baseFilename}_${currentHeight}`));
+      
+      if (!file) throw new Error('Arquivo de vídeo não encontrado após download.');
+      filepath = path.join(TEMP_DIR, file);
 
-        const stats = fs.statSync(filepath);
-        const fileSizeInMB = stats.size / (1024 * 1024);
+      const stats = fs.statSync(filepath);
+      const fileSizeInMB = stats.size / (1024 * 1024);
 
-        if (fileSizeInMB <= 15.5) {
-          return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: false };
-        } else {
-          if (attempt === 1) {
-             fs.unlinkSync(filepath); // Apaga arquivo muito pesado para vídeo nativo
-             console.log(`Vídeo ficou com ${fileSizeInMB.toFixed(2)}MB, excede o limite nativo da API (16MB). Apagando e tentando 480p...`);
-             currentHeight = 480;
-          } else {
-             if (fileSizeInMB <= 95) {
-                 console.log(`Mesmo em 480p, vídeo tem ${fileSizeInMB.toFixed(2)}MB. Retornando para envio como documento...`);
-                 return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: true };
-             } else {
-                 console.log(`Vídeo gigante com ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
-                 try {
-                   const externalUrl = await uploadToCatbox(filepath, file);
-                   fs.unlinkSync(filepath);
-                   return { success: true, externalUrl, filename: file };
-                 } catch (err) {
-                   fs.unlinkSync(filepath);
-                   return { success: false, error: 'O vídeo é muito pesado e o servidor temporário recusou o upload.' };
-                 }
-             }
-          }
+      if (fileSizeInMB <= 15.5) {
+        return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: false };
+      } else if (fileSizeInMB <= 95) {
+        console.log(`Vídeo tem ${fileSizeInMB.toFixed(2)}MB. Retornando para envio como documento...`);
+        return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: true };
+      } else {
+        console.log(`Vídeo gigante com ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
+        try {
+          const externalUrl = await uploadToCatbox(filepath, file);
+          fs.unlinkSync(filepath);
+          return { success: true, externalUrl, filename: file };
+        } catch (err) {
+          fs.unlinkSync(filepath);
+          return { success: false, error: 'O vídeo é muito pesado e o servidor temporário recusou o upload.' };
         }
       }
     }
