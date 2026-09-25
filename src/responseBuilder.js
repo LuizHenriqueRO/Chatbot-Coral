@@ -123,23 +123,23 @@ export function buildResponse(intent, driveResult, mediaResult, recipient_phone)
         message_type = 'text';
         api_payload.type = 'text';
         api_payload.text = { body: message_text };
+      } else if (mediaResult.sendAsDocument) {
+        message_text = intent.format === 'audio' 
+          ? 'Este áudio é grande demais para o limite nativo, então estou enviando como um arquivo de documento! 🎵' 
+          : 'Este vídeo é grande demais para o limite nativo, então estou enviando como um arquivo de documento! 🎬';
+        message_type = 'document';
+        api_payload.type = 'document';
+        api_payload.document = { id: mediaResult.media_id, caption: message_text, filename: mediaResult.filename };
       } else if (intent.format === 'audio') {
         message_text = 'Aqui está o seu áudio! 🎵';
         message_type = 'audio';
         api_payload.type = 'audio';
         api_payload.audio = { id: mediaResult.media_id };
       } else {
-        if (mediaResult.sendAsDocument) {
-          message_text = 'Este vídeo é grande demais para o limite nativo, então estou enviando como um arquivo de documento! 🎬';
-          message_type = 'document';
-          api_payload.type = 'document';
-          api_payload.document = { id: mediaResult.media_id, caption: message_text, filename: mediaResult.filename };
-        } else {
-          message_text = 'Aqui está o seu vídeo! 🎬';
-          message_type = 'video';
-          api_payload.type = 'video';
-          api_payload.video = { id: mediaResult.media_id, caption: message_text };
-        }
+        message_text = 'Aqui está o seu vídeo! 🎬';
+        message_type = 'video';
+        api_payload.type = 'video';
+        api_payload.video = { id: mediaResult.media_id, caption: message_text };
       }
     } else {
       message_text = mediaResult && mediaResult.error 

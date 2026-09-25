@@ -76,19 +76,20 @@ export async function updateYtDlp() {
   }
 }
 
-async function uploadToTmpfiles(filepath, filename) {
+async function uploadToCatbox(filepath, filename) {
   const buffer = fs.readFileSync(filepath);
   const blob = new Blob([buffer]);
   const formData = new FormData();
-  formData.append('file', blob, filename);
+  formData.append('reqtype', 'fileupload');
+  formData.append('fileToUpload', blob, filename);
 
-  const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+  const res = await fetch('https://catbox.moe/user/api.php', {
     method: 'POST',
     body: formData
   });
-  const json = await res.json();
-  if (json.status === 'success') {
-    return json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+  const text = await res.text();
+  if (text && text.startsWith('https://')) {
+    return text;
   }
   throw new Error('Falha ao fazer upload temporário no servidor externo.');
 }
@@ -132,9 +133,12 @@ export async function downloadMedia(url, format) {
 
       if (fileSizeInMB <= 15.5) {
          return { success: true, filepath, mimeType: 'audio/mpeg', filename: `${baseFilename}.mp3`, sendAsDocument: false };
+      } else if (fileSizeInMB <= 95) {
+         console.log(`Áudio tem ${fileSizeInMB.toFixed(2)}MB. Retornando para envio como documento...`);
+         return { success: true, filepath, mimeType: 'audio/mpeg', filename: `${baseFilename}.mp3`, sendAsDocument: true };
       } else {
          console.log(`Áudio tem ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
-         const externalUrl = await uploadToTmpfiles(filepath, `${baseFilename}.mp3`);
+         const externalUrl = await uploadToCatbox(filepath, `${baseFilename}.mp3`);
          fs.unlinkSync(filepath);
          return { success: true, externalUrl, filename: `${baseFilename}.mp3` };
       }
@@ -176,10 +180,20 @@ export async function downloadMedia(url, format) {
              console.log(`Vídeo ficou com ${fileSizeInMB.toFixed(2)}MB, excede o limite nativo da API (16MB). Apagando e tentando 480p...`);
              currentHeight = 480;
           } else {
-             console.log(`Mesmo em 480p, vídeo tem ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
-             const externalUrl = await uploadToTmpfiles(filepath, file);
-             fs.unlinkSync(filepath);
-             return { success: true, externalUrl, filename: file };
+             if (fileSizeInMB <= 95) {
+                 console.log(`Mesmo em 480p, vídeo tem ${fileSizeInMB.toFixed(2)}MB. Retornando para envio como documento...`);
+                 return { success: true, filepath, mimeType: 'video/mp4', filename: file, sendAsDocument: true };
+             } else {
+                 console.log(`Vídeo gigante com ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
+                 try {
+                   const externalUrl = await uploadToCatbox(filepath, file);
+                   fs.unlinkSync(filepath);
+                   return { success: true, externalUrl, filename: file };
+                 } catch (err) {
+                   fs.unlinkSync(filepath);
+                   return { success: false, error: 'O vídeo é muito pesado e o servidor temporário recusou o upload.' };
+                 }
+             }
           }
         }
       }
