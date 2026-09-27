@@ -156,7 +156,7 @@ export async function downloadMedia(url, format) {
             output: attemptPath,
             ffmpegLocation: ffmpegPath,
             mergeOutputFormat: 'mp4',
-            extractorArgs: 'youtube:player_client=android',
+            extractorArgs: 'youtube:player_client=default,-android_sdkless',
             noCheckCertificates: true,
             noWarnings: true,
           }),
