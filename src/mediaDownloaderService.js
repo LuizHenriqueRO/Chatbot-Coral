@@ -26,8 +26,8 @@ let ytDlpExec = youtubedl;
 
 async function ensureYtDlpStandalone() {
   if (!fs.existsSync(ytDlpBinaryPath)) {
-    console.log(`Baixando binário standalone do yt-dlp para ${process.platform} em ${ytDlpBinaryPath}...`);
-    const downloadUrl = `https://github.com/yt-dlp/yt-dlp/releases/latest/download/${ytDlpFileName}`;
+    console.log(`Baixando binário standalone do yt-dlp (nightly) para ${process.platform} em ${ytDlpBinaryPath}...`);
+    const downloadUrl = `https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/${ytDlpFileName}`;
     
     await new Promise((resolve, reject) => {
       const file = fs.createWriteStream(ytDlpBinaryPath);
@@ -66,10 +66,10 @@ ensureYtDlpStandalone().catch(err => console.error('Erro no setup do yt-dlp:', e
 
 export async function updateYtDlp() {
   try {
-    console.log('Atualizando yt-dlp...');
+    console.log('Atualizando yt-dlp para a versão nightly...');
     // Como estamos usando nosso binário customizado, podemos pedir pro yt-dlp se atualizar
     if (fs.existsSync(ytDlpBinaryPath)) {
-       execSync(`"${ytDlpBinaryPath}" -U`, { stdio: 'inherit' });
+       execSync(`"${ytDlpBinaryPath}" --update-to nightly`, { stdio: 'inherit' });
     }
   } catch (error) {
     console.error('Erro ao atualizar yt-dlp:', error);
