@@ -28,7 +28,23 @@ let ytDlpExec = youtubedl;
 const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
 if (process.env.YOUTUBE_COOKIES) {
   try {
-    fs.writeFileSync(cookiesPath, process.env.YOUTUBE_COOKIES.replace(/\\n/g, '\n'), 'utf-8');
+    let rawCookies = process.env.YOUTUBE_COOKIES;
+    
+    // Se o usuário usou Base64 para evitar corrupção
+    if (!rawCookies.includes('# Netscape') && /^[a-zA-Z0-9+/=]+$/.test(rawCookies.trim())) {
+      rawCookies = Buffer.from(rawCookies.trim(), 'base64').toString('utf-8');
+    }
+    
+    // Tenta corrigir quebras de linha caso o painel de hospedagem tenha achatado tudo
+    let formattedCookies = rawCookies
+      .replace(/\\n/g, '\n')
+      .replace(/(TRUE|FALSE)\s+(TRUE|FALSE)\s+(\d+)\s+([^\s]+)\s+([^\s]+)/g, "$1\t$2\t$3\t$4\t$5")
+      .replace(/\.youtube\.com/g, "\n.youtube.com");
+      
+    // Limpa linhas em branco duplas
+    formattedCookies = formattedCookies.replace(/\n+/g, '\n');
+
+    fs.writeFileSync(cookiesPath, formattedCookies, 'utf-8');
     console.log('Arquivo de cookies do YouTube gerado via Variável de Ambiente com sucesso!');
   } catch (err) {
     console.error('Falha ao gravar cookies.txt a partir da variável de ambiente:', err);
