@@ -24,6 +24,16 @@ const ytDlpBinaryPath = path.join(BIN_DIR, ytDlpFileName);
 
 let ytDlpExec = youtubedl;
 
+// Trata os cookies do YouTube vindos da variável de ambiente para não expor no GitHub
+const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
+if (process.env.YOUTUBE_COOKIES) {
+  try {
+    fs.writeFileSync(cookiesPath, process.env.YOUTUBE_COOKIES.replace(/\\n/g, '\n'), 'utf-8');
+    console.log('Arquivo de cookies do YouTube gerado via Variável de Ambiente com sucesso!');
+  } catch (err) {
+    console.error('Falha ao gravar cookies.txt a partir da variável de ambiente:', err);
+  }
+}
 async function ensureYtDlpStandalone() {
   if (!fs.existsSync(ytDlpBinaryPath)) {
     console.log(`Baixando binário standalone do yt-dlp (nightly) para ${process.platform} em ${ytDlpBinaryPath}...`);
@@ -106,16 +116,20 @@ export async function downloadMedia(url, format) {
       const outPath = path.join(TEMP_DIR, `${baseFilename}.%(ext)s`);
       console.log(`Iniciando download do áudio de ${url}...`);
 
+      const ytDlpAudioOptions = {
+        extractAudio: true,
+        audioFormat: 'mp3',
+        output: outPath,
+        ffmpegLocation: ffmpegPath,
+        extractorArgs: 'youtube:player_client=default,-android_sdkless',
+        noCheckCertificates: true,
+        noWarnings: true,
+      };
+      const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
+      if (fs.existsSync(cookiesPath)) ytDlpAudioOptions.cookies = cookiesPath;
+
       await Promise.race([
-        ytDlpExec(url, {
-          extractAudio: true,
-          audioFormat: 'mp3',
-          output: outPath,
-          ffmpegLocation: ffmpegPath,
-          extractorArgs: 'youtube:player_client=default,-android_sdkless',
-          noCheckCertificates: true,
-          noWarnings: true,
-        }),
+        ytDlpExec(url, ytDlpAudioOptions),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
       ]);
 
@@ -150,18 +164,22 @@ export async function downloadMedia(url, format) {
         const attemptPath = path.join(TEMP_DIR, `${baseFilename}_${currentHeight}.%(ext)s`);
         console.log(`Iniciando download do vídeo de ${url} na qualidade ${currentHeight}p... (Tentativa ${attempt})`);
 
+        const ytDlpOptions = {
+          format: `bestvideo[height<=${currentHeight}][vcodec^=avc][ext=mp4]+bestaudio[ext=m4a]/best[height<=${currentHeight}][vcodec^=avc][ext=mp4]/best[height<=${currentHeight}][ext=mp4]/best[ext=mp4]/best`,
+          output: attemptPath,
+          ffmpegLocation: ffmpegPath,
+          mergeOutputFormat: 'mp4',
+          extractorArgs: 'youtube:player_client=default,-android_sdkless',
+          embedMetadata: true,
+          postprocessorArgs: 'ffmpeg:-movflags +faststart',
+          noCheckCertificates: true,
+          noWarnings: true,
+        };
+        const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
+        if (fs.existsSync(cookiesPath)) ytDlpOptions.cookies = cookiesPath;
+
         await Promise.race([
-          ytDlpExec(url, {
-            format: `bestvideo[height<=${currentHeight}][vcodec^=avc][ext=mp4]+bestaudio[ext=m4a]/best[height<=${currentHeight}][vcodec^=avc][ext=mp4]/best[height<=${currentHeight}][ext=mp4]/best[ext=mp4]/best`,
-            output: attemptPath,
-            ffmpegLocation: ffmpegPath,
-            mergeOutputFormat: 'mp4',
-            extractorArgs: 'youtube:player_client=default,-android_sdkless',
-            embedMetadata: true,
-            postprocessorArgs: 'ffmpeg:-movflags +faststart',
-            noCheckCertificates: true,
-            noWarnings: true,
-          }),
+          ytDlpExec(url, ytDlpOptions),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
         ]);
 
