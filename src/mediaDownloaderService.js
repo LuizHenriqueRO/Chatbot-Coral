@@ -121,12 +121,15 @@ export async function downloadMedia(url, format) {
         audioFormat: 'mp3',
         output: outPath,
         ffmpegLocation: ffmpegPath,
-        extractorArgs: 'youtube:player_client=default,-android_sdkless',
         noCheckCertificates: true,
         noWarnings: true,
       };
       const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
-      if (fs.existsSync(cookiesPath)) ytDlpAudioOptions.cookies = cookiesPath;
+      if (fs.existsSync(cookiesPath)) {
+        ytDlpAudioOptions.cookies = cookiesPath;
+      } else {
+        ytDlpAudioOptions.extractorArgs = 'youtube:player_client=default,-android_sdkless';
+      }
 
       await Promise.race([
         ytDlpExec(url, ytDlpAudioOptions),
@@ -169,14 +172,17 @@ export async function downloadMedia(url, format) {
           output: attemptPath,
           ffmpegLocation: ffmpegPath,
           mergeOutputFormat: 'mp4',
-          extractorArgs: 'youtube:player_client=default,-android_sdkless',
           embedMetadata: true,
           postprocessorArgs: 'ffmpeg:-movflags +faststart',
           noCheckCertificates: true,
           noWarnings: true,
         };
         const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
-        if (fs.existsSync(cookiesPath)) ytDlpOptions.cookies = cookiesPath;
+        if (fs.existsSync(cookiesPath)) {
+          ytDlpOptions.cookies = cookiesPath;
+        } else {
+          ytDlpOptions.extractorArgs = 'youtube:player_client=default,-android_sdkless';
+        }
 
         await Promise.race([
           ytDlpExec(url, ytDlpOptions),
