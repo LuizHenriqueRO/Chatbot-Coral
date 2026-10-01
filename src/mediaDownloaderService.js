@@ -30,22 +30,25 @@ if (process.env.YOUTUBE_COOKIES) {
   try {
     let rawCookies = process.env.YOUTUBE_COOKIES;
     
-    // Se o usuário usou Base64 para evitar corrupção
-    if (!rawCookies.includes('# Netscape') && /^[a-zA-Z0-9+/=]+$/.test(rawCookies.trim())) {
-      rawCookies = Buffer.from(rawCookies.trim(), 'base64').toString('utf-8');
-    }
-    
-    // Tenta corrigir quebras de linha caso o painel de hospedagem tenha achatado tudo
-    let formattedCookies = rawCookies
-      .replace(/\\n/g, '\n')
-      .replace(/(TRUE|FALSE)\s+(TRUE|FALSE)\s+(\d+)\s+([^\s]+)\s+([^\s]+)/g, "$1\t$2\t$3\t$4\t$5")
-      .replace(/\.youtube\.com/g, "\n.youtube.com");
-      
-    // Limpa linhas em branco duplas
-    formattedCookies = formattedCookies.replace(/\n+/g, '\n');
+    // Se o usuário usou Base64 para evitar corrupção, os dados já estão perfeitos
+    if (!rawCookies.includes('# Netscape') && /^[a-zA-Z0-9+/=\s]+$/.test(rawCookies.trim())) {
+      const cleanBase64 = rawCookies.replace(/\s+/g, '');
+      const decodedCookies = Buffer.from(cleanBase64, 'base64').toString('utf-8');
+      fs.writeFileSync(cookiesPath, decodedCookies, 'utf-8');
+      console.log('Arquivo de cookies do YouTube gerado via Base64 com sucesso!');
+    } else {
+      // Tenta corrigir quebras de linha caso o painel de hospedagem tenha achatado tudo em texto puro
+      let formattedCookies = rawCookies
+        .replace(/\\n/g, '\n')
+        .replace(/(TRUE|FALSE)\s+(TRUE|FALSE)\s+(\d+)\s+([^\s]+)\s+([^\s]+)/g, "$1\t$2\t$3\t$4\t$5")
+        .replace(/(^|\s)\.youtube\.com/g, "\n.youtube.com"); // Previne quebrar #HttpOnly_.youtube.com
+        
+      // Limpa linhas em branco duplas
+      formattedCookies = formattedCookies.replace(/\n+/g, '\n');
 
-    fs.writeFileSync(cookiesPath, formattedCookies, 'utf-8');
-    console.log('Arquivo de cookies do YouTube gerado via Variável de Ambiente com sucesso!');
+      fs.writeFileSync(cookiesPath, formattedCookies, 'utf-8');
+      console.log('Arquivo de cookies do YouTube gerado via texto puro com sucesso!');
+    }
   } catch (err) {
     console.error('Falha ao gravar cookies.txt a partir da variável de ambiente:', err);
   }
