@@ -137,7 +137,7 @@ export async function downloadMedia(url, format) {
 
       const ytDlpAudioOptions = {
         extractAudio: true,
-        audioFormat: 'mp3',
+        audioFormat: 'm4a',
         output: outPath,
         ffmpegLocation: ffmpegPath,
         noCheckCertificates: true,
@@ -155,7 +155,7 @@ export async function downloadMedia(url, format) {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de download (a rede bloqueou ou o link está indisponível)')), 180000))
       ]);
 
-      const downloadedFile = path.join(TEMP_DIR, `${baseFilename}.mp3`);
+      const downloadedFile = path.join(TEMP_DIR, `${baseFilename}.m4a`);
       let filepath = downloadedFile;
       if (!fs.existsSync(downloadedFile)) {
         const files = fs.readdirSync(TEMP_DIR);
@@ -168,15 +168,15 @@ export async function downloadMedia(url, format) {
       const fileSizeInMB = stats.size / (1024 * 1024);
 
       if (fileSizeInMB <= 15.5) {
-         return { success: true, filepath, mimeType: 'audio/mpeg', filename: `${baseFilename}.mp3`, sendAsDocument: false };
+         return { success: true, filepath, mimeType: 'audio/mp4', filename: `${baseFilename}.m4a`, sendAsDocument: false };
       } else if (fileSizeInMB <= 95) {
          console.log(`Áudio tem ${fileSizeInMB.toFixed(2)}MB. Retornando para envio como documento...`);
-         return { success: true, filepath, mimeType: 'audio/mpeg', filename: `${baseFilename}.mp3`, sendAsDocument: true };
+         return { success: true, filepath, mimeType: 'audio/mp4', filename: `${baseFilename}.m4a`, sendAsDocument: true };
       } else {
          console.log(`Áudio tem ${fileSizeInMB.toFixed(2)}MB. Fazendo upload para servidor externo...`);
-         const externalUrl = await uploadToCatbox(filepath, `${baseFilename}.mp3`);
+         const externalUrl = await uploadToCatbox(filepath, `${baseFilename}.m4a`);
          fs.unlinkSync(filepath);
-         return { success: true, externalUrl, filename: `${baseFilename}.mp3` };
+         return { success: true, externalUrl, filename: `${baseFilename}.m4a` };
       }
     } else {
       let currentHeight = 720;
