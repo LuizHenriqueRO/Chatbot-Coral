@@ -2,22 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import cron from 'node-cron';
 import { updateYtDlp } from './mediaDownloaderService.js';
+import { query } from './db.js';
 
 export function startCronJobs(sendTemplateMessageFn) {
   cron.schedule('0 9 * * *', async () => {
     console.log('[CRON] Iniciando verificação diária de aniversariantes (teste às 9h da manhã todos os dias)...');
 
     try {
-      // Lê o arquivo JSON com os membros
-      const filePath = path.resolve('members.json');
-      if (!fs.existsSync(filePath)) {
-        console.log('[CRON] Arquivo members.json não encontrado. Cancelando verificação.');
-        return;
-      }
-
-      const rawData = fs.readFileSync(filePath, 'utf-8');
-      const members = JSON.parse(rawData);
-
       // Pega a data de hoje no fuso horário do Brasil
       const hojeBrasil = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
       const day = String(hojeBrasil.getDate()).padStart(2, '0');
@@ -26,7 +17,9 @@ export function startCronJobs(sendTemplateMessageFn) {
 
       console.log(`[CRON] Data de hoje: ${todayString}`);
 
-      const aniversariantes = members.filter(member => member.birthday === todayString);
+      // Busca aniversariantes no PostgreSQL
+      const result = await query('SELECT * FROM members WHERE birthday = $1', [todayString]);
+      const aniversariantes = result.rows;
 
       if (aniversariantes.length > 0) {
         console.log(`[CRON] Encontrado(s) ${aniversariantes.length} aniversariante(s) hoje!`);

@@ -9,6 +9,7 @@ import { uploadMediaToWhatsApp } from './whatsappMediaService.js';
 import { getHistory, addMessageToHistory } from './memoryService.js';
 import { startCronJobs } from './cronService.js';
 import { downloadMedia } from './mediaDownloaderService.js';
+import { createTables } from './db.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -315,6 +316,10 @@ async function sendWhatsAppTemplateMessage(recipient_phone, templateName, namePa
 // Inicia os agendamentos automáticos (ex: aniversários diários)
 startCronJobs(sendWhatsAppTemplateMessage);
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT} e ouvindo requisições externas`);
+createTables().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor rodando na porta ${PORT} e ouvindo requisições externas`);
+  });
+}).catch(err => {
+  console.error('Falha ao conectar no banco de dados:', err);
 });
