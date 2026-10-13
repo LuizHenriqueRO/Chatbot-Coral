@@ -49,58 +49,183 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
   }
 
   try {
-    if (category === 'coral' || category === 'licao') {
+    if (category === 'licao') {
+      if (!GOOGLE_DRIVE_LICAO_FOLDER_ID) {
+        return { found: false, error_message: 'A pasta raiz da Lição da Escola Sabatina não foi configurada nas variáveis.' };
+      }
+
+      // Lista todas as pastas dentro da pasta raiz de Lição
+      const foldersRes = await drive.files.list({
+        q: `'${GOOGLE_DRIVE_LICAO_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        fields: 'files(id, name)',
+        pageSize: 1000,
+      });
+      const folders = foldersRes.data.files || [];
+
+      if (folders.length === 0) {
+        return { found: false, error_message: 'Nenhuma pasta encontrada dentro da pasta de Lição.' };
+      }
+
+      const normalizeStr = (str) => (str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+      const target = normalizeStr(song_name);
+      let bestFolder = null;
+
+      // 1. Prioriza pasta de inglês ("ingles")
+      if (target.includes('ingle') || target.includes('english')) {
+        bestFolder = folders.find(f => {
+          const fn = normalizeStr(f.name);
+          return fn === 'ingles' || fn.includes('ingle') || fn.includes('english');
+        });
+      }
+      // 2. Prioriza pasta de espanhol ("espanhol")
+      else if (target.includes('espanho') || target.includes('espanol') || target.includes('spanish')) {
+        bestFolder = folders.find(f => {
+          const fn = normalizeStr(f.name);
+          return fn === 'espanhol' || fn.includes('espanho') || fn.includes('espanol') || fn.includes('spanish');
+        });
+      }
+      // 3. Pasta de adultos (português)
+      else if (target.includes('adult')) {
+        bestFolder = folders.find(f => {
+          const fn = normalizeStr(f.name);
+          return (fn === 'adultos' || fn === 'adulto' || fn.includes('adult')) && !fn.includes('ingle') && !fn.includes('espanh');
+        });
+      }
+      // 4. Pasta de jovens (português)
+      else if (target.includes('jove') || target.includes('youth')) {
+        bestFolder = folders.find(f => {
+          const fn = normalizeStr(f.name);
+          return fn === 'jovens' || fn === 'jovem' || fn.includes('jove');
+        });
+      }
+
+      // 5. Fallback com busca difusa (Fuse) caso o nome da pasta seja ligeiramente diferente
+      if (!bestFolder) {
+        const fuse = new Fuse(folders, { keys: ['name'], threshold: 0.40, ignoreLocation: true, includeScore: true });
+        const fuzzyResults = fuse.search(song_name);
+        if (fuzzyResults.length > 0 && fuzzyResults[0].score <= 0.65) {
+          bestFolder = fuzzyResults[0].item;
+        }
+      }
+
+      if (!bestFolder) {
+        return {
+          found: false,
+          error_message: `Não encontrei a pasta da lição para '${song_name}' na Escola Sabatina.`,
+          candidates: folders.map(f => f.name)
+        };
+      }
+
+      const song_folder = bestFolder.name;
+
+      // Lista arquivos dentro da pasta encontrada (ordenando pelos mais recentes)
+      const filesRes = await drive.files.list({
+        q: `'${bestFolder.id}' in parents and trashed = false`,
+        fields: 'files(id, name, mimeType, webContentLink, modifiedTime)',
+        orderBy: 'modifiedTime desc',
+        pageSize: 1000,
+      });
+      let files = filesRes.data.files || [];
+
+      // Filtra por PDF
+      let matchedFiles = files.filter(file => {
+        if (file_type === 'pdf' || !file_type) return file.mimeType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (file_type === 'txt') return file.mimeType === 'text/plain' || file.name.toLowerCase().endsWith('.txt');
+        if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|aac|flac|wma|opus)$/i);
+        return true;
+      });
+
+      // Se não encontrou o PDF diretamente na raiz da pasta, verifica se há subpastas dentro dela com o arquivo
+      if (matchedFiles.length === 0) {
+        const subfoldersRes = await drive.files.list({
+          q: `'${bestFolder.id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+          fields: 'files(id, name)',
+          pageSize: 20,
+        });
+        const subfolders = subfoldersRes.data.files || [];
+        for (const sf of subfolders) {
+          const sfFilesRes = await drive.files.list({
+            q: `'${sf.id}' in parents and trashed = false`,
+            fields: 'files(id, name, mimeType, webContentLink, modifiedTime)',
+            orderBy: 'modifiedTime desc',
+            pageSize: 100,
+          });
+          const sfMatched = (sfFilesRes.data.files || []).filter(file => {
+            if (file_type === 'pdf' || !file_type) return file.mimeType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            return true;
+          });
+          if (sfMatched.length > 0) {
+            matchedFiles = sfMatched;
+            break;
+          }
+        }
+      }
+
+      if (matchedFiles.length === 0) {
+        return {
+          found: false,
+          error_message: `Nenhum arquivo de lição em PDF encontrado na pasta '${song_folder}'.`,
+          song_folder
+        };
+      }
+
+      const bestFile = matchedFiles[0];
+      return {
+        found: true,
+        file_id: bestFile.id,
+        file_name: bestFile.name,
+        mime_type: bestFile.mimeType || 'application/pdf',
+        song_folder,
+        score: 1.0
+      };
+
+    } else if (category === 'coral') {
       let candidates = [];
 
-      if (category === 'coral') {
-        if (GOOGLE_DRIVE_CORAL_FOLDER_ID) {
-          const foldersRes = await drive.files.list({
-            q: `'${GOOGLE_DRIVE_CORAL_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-            fields: 'files(id, name)',
-            pageSize: 1000,
-          });
-          const folders = foldersRes.data.files || [];
-          folders.forEach(f => candidates.push({ type: 'coral_folder', id: f.id, name: f.name }));
-        }
-
-        if (GOOGLE_DRIVE_LOUVOR_FOLDER_ID) {
-          const filesRes = await drive.files.list({
-            q: `'${GOOGLE_DRIVE_LOUVOR_FOLDER_ID}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`,
-            fields: 'files(id, name, mimeType, webContentLink)',
-            pageSize: 1000,
-          });
-          let louvorFiles = filesRes.data.files || [];
-          
-          // Filter by file type
-          louvorFiles = louvorFiles.filter(file => {
-            if (file_type === 'txt') return file.mimeType === 'text/plain' || file.name.endsWith('.txt');
-            if (file_type === 'pdf') return file.mimeType === 'application/pdf' || file.name.endsWith('.pdf');
-            if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|aac|flac|wma|opus)$/i);
-            return false;
-          });
-
-          // Filter by voice part (if audio and voice_part present)
-          if (file_type === 'audio' && voice_part) {
-            louvorFiles = louvorFiles.filter(file => file.name.toLowerCase().includes(voice_part.toLowerCase()));
-          }
-
-          louvorFiles.forEach(f => {
-            const cleanName = f.name.replace(/\.[^/.]+$/, "");
-            candidates.push({ type: 'louvor_file', item: f, name: cleanName });
-          });
-        }
-
-        if (candidates.length === 0) {
-           return { found: false, error_message: 'Nenhuma pasta/arquivo de coral/louvor encontrado ou configurado.' };
-        }
-      } else {
+      if (GOOGLE_DRIVE_CORAL_FOLDER_ID) {
         const foldersRes = await drive.files.list({
-          q: `'${GOOGLE_DRIVE_LICAO_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+          q: `'${GOOGLE_DRIVE_CORAL_FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
           fields: 'files(id, name)',
           pageSize: 1000,
         });
         const folders = foldersRes.data.files || [];
-        folders.forEach(f => candidates.push({ type: 'licao_folder', id: f.id, name: f.name }));
+        folders.forEach(f => candidates.push({ type: 'coral_folder', id: f.id, name: f.name }));
+      }
+
+      if (GOOGLE_DRIVE_LOUVOR_FOLDER_ID) {
+        const filesRes = await drive.files.list({
+          q: `'${GOOGLE_DRIVE_LOUVOR_FOLDER_ID}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`,
+          fields: 'files(id, name, mimeType, webContentLink)',
+          pageSize: 1000,
+        });
+        let louvorFiles = filesRes.data.files || [];
+        
+        // Filter by file type
+        louvorFiles = louvorFiles.filter(file => {
+          if (file_type === 'txt') return file.mimeType === 'text/plain' || file.name.endsWith('.txt');
+          if (file_type === 'pdf') return file.mimeType === 'application/pdf' || file.name.endsWith('.pdf');
+          if (file_type === 'audio') return file.mimeType?.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|aac|flac|wma|opus)$/i);
+          return false;
+        });
+
+        // Filter by voice part (if audio and voice_part present)
+        if (file_type === 'audio' && voice_part) {
+          louvorFiles = louvorFiles.filter(file => file.name.toLowerCase().includes(voice_part.toLowerCase()));
+        }
+
+        louvorFiles.forEach(f => {
+          const cleanName = f.name.replace(/\.[^/.]+$/, "");
+          candidates.push({ type: 'louvor_file', item: f, name: cleanName });
+        });
+      }
+
+      if (candidates.length === 0) {
+         return { found: false, error_message: 'Nenhuma pasta/arquivo de coral/louvor encontrado ou configurado.' };
       }
 
       // Fuzzy match folders/files against song_name
@@ -108,8 +233,7 @@ export async function searchDrive(song_name, file_type, voice_part, category = '
       const fuzzyResults = fuse.search(song_name);
 
       if (fuzzyResults.length === 0 || fuzzyResults[0].score > 0.65) { 
-        let localName = category === 'coral' ? 'no Coral/Louvor' : 'na Lição da Escola Sabatina';
-        return { found: false, error_message: `Não encontrei referências para '${song_name}' ${localName}.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
+        return { found: false, error_message: `Não encontrei referências para '${song_name}' no Coral/Louvor.`, candidates: fuzzyResults.map(r => `${r.item.name}`) };
       }
 
       const bestMatch = fuzzyResults[0].item;

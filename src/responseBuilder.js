@@ -81,7 +81,8 @@ export function buildResponse(intent, driveResult, mediaResult, recipient_phone)
         message_type = 'document';
         api_payload.type = 'document';
         let safe_pdf_name = driveResult.file_name.toLowerCase().endsWith('.pdf') ? driveResult.file_name : `${driveResult.file_name}.pdf`;
-        api_payload.document = { id: driveResult.media_id, caption: `${driveResult.file_name} 🎶`, filename: safe_pdf_name };
+        let caption = intent.category === 'licao' ? `${driveResult.file_name} 📖` : `${driveResult.file_name} 🎶`;
+        api_payload.document = { id: driveResult.media_id, caption, filename: safe_pdf_name };
       } else if (intent.file_type === 'txt') {
         if (driveResult.text_content) {
           file_label = 'a letra';
@@ -100,18 +101,36 @@ export function buildResponse(intent, driveResult, mediaResult, recipient_phone)
 
       if (message_type !== 'text') {
         if (intent.category === 'licao') {
-          message_text = `Aqui está ${file_label} de *${intent.song_name}*! 📖 Bons estudos!`;
+          const normSong = (intent.song_name || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+          if (normSong.includes('ingle') || normSong.includes('english') || normSong.includes('espanho') || normSong.includes('spanish')) {
+            message_text = `Aqui está ${file_label} em *${intent.song_name}*! 📖 Bons estudos!`;
+          } else {
+            message_text = `Aqui está ${file_label} de *${intent.song_name}*! 📖 Bons estudos!`;
+          }
         } else {
           message_text = `Aqui está ${file_label} de *${intent.song_name}*! 🎶 Bons ensaios!`;
         }
       }
     } else {
-      if (driveResult && driveResult.candidates && driveResult.candidates.length > 0) {
-        message_text = `Não encontrei '${intent.song_name}' no Drive. Você quis dizer '${driveResult.candidates[0]}'? Ou fale com o regente. 🎵`;
-      } else if (driveResult && driveResult.error_message) {
-        message_text = `${driveResult.error_message} Verifique o nome da música ou fale com o regente. 🎵`;
+      if (intent.category === 'licao') {
+        if (driveResult && driveResult.candidates && driveResult.candidates.length > 0) {
+          message_text = `Não encontrei a lição '${intent.song_name}' no Drive. Você quis dizer '${driveResult.candidates[0]}'? 📖`;
+        } else if (driveResult && driveResult.error_message) {
+          message_text = `${driveResult.error_message} 📖`;
+        } else {
+          message_text = `Não encontrei a lição de '${intent.song_name}' no Drive. 📖`;
+        }
       } else {
-        message_text = `Não encontrei '${intent.song_name}' no Drive. Verifique o nome da música ou fale com o regente. 🎵`;
+        if (driveResult && driveResult.candidates && driveResult.candidates.length > 0) {
+          message_text = `Não encontrei '${intent.song_name}' no Drive. Você quis dizer '${driveResult.candidates[0]}'? Ou fale com o regente. 🎵`;
+        } else if (driveResult && driveResult.error_message) {
+          message_text = `${driveResult.error_message} Verifique o nome da música ou fale com o regente. 🎵`;
+        } else {
+          message_text = `Não encontrei '${intent.song_name}' no Drive. Verifique o nome da música ou fale com o regente. 🎵`;
+        }
       }
       api_payload.type = 'text';
       api_payload.text = { body: message_text };

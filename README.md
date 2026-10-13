@@ -17,7 +17,7 @@ Este chatbot funciona como um bibliotecário e assistente amigável, alimentado 
 *   **🎼 Partituras e Letras:** Acesso a PDFs e textos extraídos diretamente do Drive.
 *   **📖 Hinário Adventista:** Busca instantânea por letras dos hinos.
 *   **📚 Acervo de Ellen White:** Pesquisa de livros em PDF com identificação inteligente de volumes (ex: *Testemunhos Seletos*).
-*   **📝 Escola Sabatina:** Distribuição das Lições (Jovens e Adultos) em PDF.
+*   **📝 Escola Sabatina:** Distribuição das Lições em PDF (Jovens e Adultos em português, e Lição de Adultos em Inglês e Espanhol).
 *   **🧠 Memória de Contexto:** Mantém o histórico da conversa vivo! Se você perguntar *"Você tem a música Alfa e Ômega?"* e em seguida disser *"Manda a pista de Tenor"*, ele entende perfeitamente.
 *   **ℹ️ Informações da Igreja:** Agenda do coral, links do Google Drive, localização e mais.
 
