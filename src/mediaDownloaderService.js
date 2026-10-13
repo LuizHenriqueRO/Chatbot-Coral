@@ -82,90 +82,116 @@ async function discoverCobaltInstances() {
 // Download via serviço externo (Cobalt API)
 async function downloadViaCobalt(url, format) {
   const isAudio = format === 'audio';
-  const payload = {
-    url,
-    alwaysProxy: true,
-    ...(isAudio ? { downloadMode: 'audio', audioFormat: 'mp3' } : { videoQuality: '720' })
-  };
+  const audioFormatsToTry = isAudio ? ['mp3', 'best'] : [null];
 
   let instances = await getCobaltInstances();
   let lastError = null;
 
   for (const instance of instances) {
-    try {
-      console.log(`[Cobalt] Requisitando resolução para: ${instance}...`);
-      const response = await fetch(instance, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(25000)
-      });
+    for (const audioFmt of audioFormatsToTry) {
+      try {
+        const payload = {
+          url,
+          alwaysProxy: true,
+          ...(isAudio ? { downloadMode: 'audio', audioFormat: audioFmt } : { videoQuality: '720' })
+        };
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        console.log(`[Cobalt] Requisitando resolução para: ${instance} (${isAudio ? audioFmt : '720p'})...`);
+        const response = await fetch(instance, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(25000)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.status === 'error') {
+          const errCode = data.error?.code || data.text || 'Erro desconhecido';
+          throw new Error(`Cobalt error: ${errCode}`);
+        }
+
+        let downloadUrl = data.url;
+        let remoteFilename = data.filename;
+
+        if (data.status === 'picker' && Array.isArray(data.picker) && data.picker.length > 0) {
+          const item = data.picker.find(p => p.type === (isAudio ? 'audio' : 'video')) || data.picker[0];
+          downloadUrl = item.url;
+        }
+
+        if (!downloadUrl) {
+          throw new Error('Nenhuma URL de mídia retornada pela API externa');
+        }
+
+        const timestamp = Date.now();
+        let detectedExt = isAudio ? (audioFmt === 'best' ? '.m4a' : '.mp3') : '.mp4';
+        if (remoteFilename && remoteFilename.includes('.')) {
+          const parts = remoteFilename.split('.');
+          const lastPart = '.' + parts[parts.length - 1].toLowerCase();
+          if (['.m4a', '.mp3', '.ogg', '.opus', '.wav', '.mp4', '.webm'].includes(lastPart)) {
+            detectedExt = lastPart;
+          }
+        }
+
+        let safeFilename = (remoteFilename || `media_${timestamp}${detectedExt}`)
+          .replace(/[/\\?%*:|"<>]/g, '_')
+          .trim();
+        if (!safeFilename.endsWith(detectedExt) && !safeFilename.includes('.')) {
+          safeFilename += detectedExt;
+        }
+
+        const targetPath = path.join(TEMP_DIR, `${timestamp}_${safeFilename}`);
+        console.log(`[Cobalt] Baixando arquivo para ${targetPath}...`);
+
+        const mediaStreamRes = await fetch(downloadUrl, { signal: AbortSignal.timeout(90000) });
+        if (!mediaStreamRes.ok) {
+          throw new Error(`Falha no download da mídia (HTTP ${mediaStreamRes.status})`);
+        }
+
+        await pipeline(Readable.fromWeb(mediaStreamRes.body), fs.createWriteStream(targetPath));
+
+        const stats = fs.statSync(targetPath);
+        if (stats.size < 1000) {
+          if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+          throw new Error('O arquivo de mídia baixado veio vazio (0 bytes). O vídeo pode estar protegido ou indisponível.');
+        }
+
+        const fileSizeInMB = stats.size / (1024 * 1024);
+        console.log(`[Cobalt] Mídia recebida com sucesso! Tamanho: ${fileSizeInMB.toFixed(2)}MB`);
+
+        let mimeType = 'video/mp4';
+        if (isAudio) {
+          if (safeFilename.toLowerCase().endsWith('.m4a') || safeFilename.toLowerCase().endsWith('.mp4') || safeFilename.toLowerCase().endsWith('.aac')) {
+            mimeType = 'audio/mp4';
+          } else if (safeFilename.toLowerCase().endsWith('.ogg') || safeFilename.toLowerCase().endsWith('.opus')) {
+            mimeType = 'audio/ogg';
+          } else {
+            mimeType = 'audio/mpeg';
+          }
+        }
+
+        if (fileSizeInMB <= 15.5) {
+          return { success: true, filepath: targetPath, mimeType, filename: safeFilename, sendAsDocument: false };
+        } else if (fileSizeInMB <= 95) {
+          console.log(`Arquivo tem ${fileSizeInMB.toFixed(2)}MB (> 16MB). Retornando para envio como documento...`);
+          return { success: true, filepath: targetPath, mimeType, filename: safeFilename, sendAsDocument: true };
+        } else {
+          console.log(`Arquivo com ${fileSizeInMB.toFixed(2)}MB (> 95MB). Fazendo upload para servidor temporário externo...`);
+          const externalUrl = await uploadToCatbox(targetPath, safeFilename);
+          if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+          return { success: true, externalUrl, filename: safeFilename };
+        }
+      } catch (err) {
+        console.warn(`[Cobalt] Falha na instância ${instance} (${audioFmt || 'video'}): ${err.message}`);
+        lastError = err;
       }
-
-      const data = await response.json();
-
-      if (data.status === 'error') {
-        const errCode = data.error?.code || data.text || 'Erro desconhecido';
-        throw new Error(`Cobalt error: ${errCode}`);
-      }
-
-      let downloadUrl = data.url;
-      let remoteFilename = data.filename;
-
-      if (data.status === 'picker' && Array.isArray(data.picker) && data.picker.length > 0) {
-        const item = data.picker.find(p => p.type === (isAudio ? 'audio' : 'video')) || data.picker[0];
-        downloadUrl = item.url;
-      }
-
-      if (!downloadUrl) {
-        throw new Error('Nenhuma URL de mídia retornada pela API externa');
-      }
-
-      const timestamp = Date.now();
-      const ext = isAudio ? '.mp3' : '.mp4';
-      let safeFilename = (remoteFilename || `media_${timestamp}${ext}`)
-        .replace(/[/\\?%*:|"<>]/g, '_')
-        .trim();
-      if (!safeFilename.endsWith(ext) && !safeFilename.includes('.')) {
-        safeFilename += ext;
-      }
-
-      const targetPath = path.join(TEMP_DIR, `${timestamp}_${safeFilename}`);
-      console.log(`[Cobalt] Baixando arquivo para ${targetPath}...`);
-
-      const mediaStreamRes = await fetch(downloadUrl, { signal: AbortSignal.timeout(90000) });
-      if (!mediaStreamRes.ok) {
-        throw new Error(`Falha no download da mídia (HTTP ${mediaStreamRes.status})`);
-      }
-
-      await pipeline(Readable.fromWeb(mediaStreamRes.body), fs.createWriteStream(targetPath));
-
-      const stats = fs.statSync(targetPath);
-      const fileSizeInMB = stats.size / (1024 * 1024);
-      console.log(`[Cobalt] Mídia recebida com sucesso! Tamanho: ${fileSizeInMB.toFixed(2)}MB`);
-
-      const mimeType = isAudio ? 'audio/mpeg' : 'video/mp4';
-
-      if (fileSizeInMB <= 15.5) {
-        return { success: true, filepath: targetPath, mimeType, filename: safeFilename, sendAsDocument: false };
-      } else if (fileSizeInMB <= 95) {
-        console.log(`Arquivo tem ${fileSizeInMB.toFixed(2)}MB (> 16MB). Retornando para envio como documento...`);
-        return { success: true, filepath: targetPath, mimeType, filename: safeFilename, sendAsDocument: true };
-      } else {
-        console.log(`Arquivo com ${fileSizeInMB.toFixed(2)}MB (> 95MB). Fazendo upload para servidor temporário externo...`);
-        const externalUrl = await uploadToCatbox(targetPath, safeFilename);
-        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
-        return { success: true, externalUrl, filename: safeFilename };
-      }
-    } catch (err) {
-      console.warn(`[Cobalt] Falha na instância ${instance}: ${err.message}`);
-      lastError = err;
     }
   }
 
@@ -186,14 +212,36 @@ async function downloadViaCobalt(url, format) {
         const data = await response.json();
         if (data.status === 'tunnel' || data.status === 'redirect') {
           const timestamp = Date.now();
-          const ext = isAudio ? '.mp3' : '.mp4';
-          const safeFilename = (data.filename || `media_${timestamp}${ext}`).replace(/[/\\?%*:|"<>]/g, '_');
+          let detectedExt = isAudio ? '.m4a' : '.mp4';
+          if (data.filename && data.filename.includes('.')) {
+            const parts = data.filename.split('.');
+            const lastPart = '.' + parts[parts.length - 1].toLowerCase();
+            if (['.m4a', '.mp3', '.ogg', '.opus', '.wav', '.mp4', '.webm'].includes(lastPart)) {
+              detectedExt = lastPart;
+            }
+          }
+
+          const safeFilename = (data.filename || `media_${timestamp}${detectedExt}`).replace(/[/\\?%*:|"<>]/g, '_');
           const targetPath = path.join(TEMP_DIR, `${timestamp}_${safeFilename}`);
           const mediaStreamRes = await fetch(data.url, { signal: AbortSignal.timeout(90000) });
           await pipeline(Readable.fromWeb(mediaStreamRes.body), fs.createWriteStream(targetPath));
           const stats = fs.statSync(targetPath);
+          if (stats.size < 1000) {
+            if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+            continue;
+          }
           const fileSizeInMB = stats.size / (1024 * 1024);
-          const mimeType = isAudio ? 'audio/mpeg' : 'video/mp4';
+          
+          let mimeType = 'video/mp4';
+          if (isAudio) {
+            if (safeFilename.toLowerCase().endsWith('.m4a') || safeFilename.toLowerCase().endsWith('.mp4') || safeFilename.toLowerCase().endsWith('.aac')) {
+              mimeType = 'audio/mp4';
+            } else if (safeFilename.toLowerCase().endsWith('.ogg') || safeFilename.toLowerCase().endsWith('.opus')) {
+              mimeType = 'audio/ogg';
+            } else {
+              mimeType = 'audio/mpeg';
+            }
+          }
 
           if (fileSizeInMB <= 15.5) {
             return { success: true, filepath: targetPath, mimeType, filename: safeFilename, sendAsDocument: false };
