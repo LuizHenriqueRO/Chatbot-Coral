@@ -163,6 +163,12 @@ async function downloadViaCobalt(url, format) {
           throw new Error('O arquivo de mídia baixado veio vazio (0 bytes). O vídeo pode estar protegido ou indisponível.');
         }
 
+        const isImage = ['.jpg', '.jpeg', '.png', '.webp'].some(e => safeFilename.toLowerCase().endsWith(e));
+        if ((isAudio || format === 'video' || !format) && isImage) {
+          if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+          throw new Error('A API externa retornou uma imagem estática (.jpg) em vez do vídeo/áudio solicitado.');
+        }
+
         const fileSizeInMB = stats.size / (1024 * 1024);
         console.log(`[Cobalt] Mídia recebida com sucesso! Tamanho: ${fileSizeInMB.toFixed(2)}MB`);
 
@@ -212,7 +218,7 @@ async function downloadViaCobalt(url, format) {
         const data = await response.json();
         if (data.status === 'tunnel' || data.status === 'redirect') {
           const timestamp = Date.now();
-          let detectedExt = isAudio ? '.m4a' : '.mp4';
+          let detectedExt = isAudio ? '.mp3' : '.mp4';
           if (data.filename && data.filename.includes('.')) {
             const parts = data.filename.split('.');
             const lastPart = '.' + parts[parts.length - 1].toLowerCase();
@@ -230,6 +236,13 @@ async function downloadViaCobalt(url, format) {
             if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
             continue;
           }
+
+          const isImage = ['.jpg', '.jpeg', '.png', '.webp'].some(e => safeFilename.toLowerCase().endsWith(e));
+          if ((isAudio || format === 'video' || !format) && isImage) {
+            if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+            continue;
+          }
+
           const fileSizeInMB = stats.size / (1024 * 1024);
           
           let mimeType = 'video/mp4';
@@ -330,20 +343,49 @@ export async function updateYtDlp() {
 }
 
 async function uploadToCatbox(filepath, filename) {
-  const buffer = fs.readFileSync(filepath);
-  const blob = new Blob([buffer]);
-  const formData = new FormData();
-  formData.append('reqtype', 'fileupload');
-  formData.append('fileToUpload', blob, filename);
+  // 1. Tenta Litterbox (suporta arquivos de até 1 GB e expira em 24h)
+  try {
+    const buffer = fs.readFileSync(filepath);
+    const blob = new Blob([buffer]);
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('time', '24h');
+    formData.append('fileToUpload', blob, filename);
 
-  const res = await fetch('https://catbox.moe/user/api.php', {
-    method: 'POST',
-    body: formData
-  });
-  const text = await res.text();
-  if (text && text.startsWith('https://')) {
-    return text;
+    const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(120000)
+    });
+    const text = await res.text();
+    if (text && text.startsWith('https://')) {
+      return text.trim();
+    }
+  } catch (err) {
+    console.warn('[Litterbox] Falha no upload:', err.message);
   }
+
+  // 2. Fallback para Catbox (até 200 MB)
+  try {
+    const buffer = fs.readFileSync(filepath);
+    const blob = new Blob([buffer]);
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', blob, filename);
+
+    const res = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(120000)
+    });
+    const text = await res.text();
+    if (text && text.startsWith('https://')) {
+      return text.trim();
+    }
+  } catch (err) {
+    console.warn('[Catbox] Falha no upload:', err.message);
+  }
+
   throw new Error('Falha ao fazer upload temporário no servidor externo.');
 }
 
